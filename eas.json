@@ -19,11 +19,7 @@
     },
     "production": {
       "android": {
-        "buildType": "app-bundle",
-        "gradleCommand": ":app:bundleRelease"
-      },
-      "env": {
-        "EXPO_PREBUILD_CLEAN": "1"
+        "buildType": "app-bundle"
       }
     }
   },
