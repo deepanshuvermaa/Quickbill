@@ -1,4 +1,4 @@
-package com.expoapp
+package com.quickbill.pos
 
 import android.app.Application
 import android.content.res.Configuration
