@@ -40,17 +40,7 @@
       "versionCode": 1
     },
     "plugins": [
-      "expo-dev-client",
-      "expo-router",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "minSdkVersion": 21
-          }
-        }
-      ],
-      "react-native-ble-plx"
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true
