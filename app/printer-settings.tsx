@@ -24,6 +24,7 @@ import {
   Smartphone
 } from 'lucide-react-native';
 import BluetoothService from '@/utils/bluetooth';
+import { Device } from 'react-native-ble-plx';
 import { useCartStore } from '@/store/cartStore';
 
 interface BluetoothDeviceItem {
@@ -55,7 +56,7 @@ export default function PrinterSettingsScreen() {
     
     try {
       await BluetoothService.startDeviceScan(
-        (device: any) => {
+        (device: Device) => {
           if (device.name) {
             setDevices(prev => {
               const existing = prev.find(d => d.id === device.id);
