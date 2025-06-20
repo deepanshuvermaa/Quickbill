@@ -1,14 +1,25 @@
 # Android Studio Build Instructions for QuickBill
 
-## ✅ BUILD SUCCESSFUL!
+## ✅ BUILD SUCCESSFUL - UPDATED VERSION!
 
-The Android App Bundle has been successfully generated at:
-`/Users/mac/Desktop/quickbill/android/app/build/outputs/bundle/release/app-release.aab`
+**APK Location**: `/Users/mac/Desktop/quickbill/android/app/build/outputs/apk/release/app-release.apk`
+**AAB Location**: `/Users/mac/Desktop/quickbill/android/app/build/outputs/bundle/release/app-release.aab`
 
-**File Size**: 53MB
+**APK Size**: 84MB
+**AAB Size**: 54MB
 **Package Name**: com.quickbill.pos
 **App Name**: QuickBill - POS & Billing
-**Bluetooth Support**: ✅ Included (react-native-ble-plx)
+**Build Date**: June 20, 2025
+**Version**: Updated with all latest features
+
+### 🆕 Latest Features Included:
+- ✅ **Real Bluetooth Scanning**: Actual BLE device discovery & connection
+- ✅ **Professional PDF Reports**: Export/share sales reports as PDF
+- ✅ **Full-Screen Cart**: Optimized cart experience with proper navigation
+- ✅ **Smart Inventory**: Automatic stock deduction when items are billed
+- ✅ **Fixed Navigation**: Proper tab bar behavior with keyboard handling
+- ✅ **Optimized UI**: Reduced whitespace and improved spacing
+- ✅ **6-Tab Bottom Navigation**: Dashboard, Billing, History, Settings, Add Item, Inventory
 
 ## Prerequisites (Already Completed)
 1. ✅ Java 17 installed via Homebrew
@@ -43,14 +54,18 @@ cd /Users/mac/Desktop/quickbill/android
 4. Complete app listing details
 5. Submit for review
 
-## Features Included
-- ✅ Full POS functionality
-- ✅ Bluetooth device scanning and pairing
+## Features Included (Latest Version)
+- ✅ Full POS functionality with real-time inventory tracking
+- ✅ Real Bluetooth device scanning, pairing & printing
+- ✅ Professional PDF report generation with export/share
 - ✅ Customer management
-- ✅ Inventory management
-- ✅ Sales reporting
-- ✅ Bill generation
+- ✅ Automatic inventory deduction when items are billed
+- ✅ Full-screen cart experience with proper navigation
+- ✅ Sales reporting with export functionality
+- ✅ Bill generation with Bluetooth printer support
 - ✅ Quotations and credit notes
+- ✅ Optimized UI with proper keyboard handling
+- ✅ Fixed bottom tab navigation
 
 ## Bluetooth Permissions Configured
 - BLUETOOTH

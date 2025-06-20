@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 90 : 60, // Account for absolute positioned tab bar
+    paddingBottom: Platform.OS === 'ios' ? 95 : 65, // Account for absolute positioned tab bar
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.border,

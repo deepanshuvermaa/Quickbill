@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 90 : 60, // Account for absolute positioned tab bar
+    paddingBottom: Platform.OS === 'ios' ? 95 : 65, // Account for absolute positioned tab bar
     paddingTop: Platform.OS === 'ios' ? 0 : 0, // Remove extra top padding
   },
   menuButton: {
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: Platform.OS === 'ios' ? 90 : 60, // Account for tab bar
+    bottom: Platform.OS === 'ios' ? 95 : 65, // Account for tab bar
     backgroundColor: colors.white,
     zIndex: 1000,
   },

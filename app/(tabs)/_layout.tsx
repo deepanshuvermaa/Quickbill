@@ -14,8 +14,9 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.white,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 90 : 60,
+          height: Platform.OS === 'ios' ? 95 : 65,
           paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+          paddingTop: 5,
           position: 'absolute',
           bottom: 0,
           left: 0,
@@ -23,8 +24,12 @@ export default function TabsLayout() {
         },
         tabBarHideOnKeyboard: Platform.OS === 'android',
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '500',
+          marginTop: 2,
+        },
+        tabBarItemStyle: {
+          paddingVertical: 2,
         },
         headerStyle: {
           backgroundColor: colors.white,

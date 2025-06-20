@@ -75,7 +75,7 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
     return null;
   }
 
-  const menuWidth = Math.min(300, Dimensions.get('window').width * 0.8);
+  const menuWidth = Math.min(320, Dimensions.get('window').width * 0.85);
 
   return (
     <Animated.View
@@ -325,11 +325,15 @@ const styles = StyleSheet.create({
   menuItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
   },
   menuItemLabel: {
     marginLeft: 12,
     fontSize: 16,
     color: colors.text,
+    flex: 1,
+    flexWrap: 'wrap',
   },
   activeMenuItem: {
     backgroundColor: `${colors.primary}10`,
