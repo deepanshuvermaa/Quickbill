@@ -111,10 +111,12 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
         ]}
       >
         <View style={styles.header}>
-          <Text style={styles.appName}>Business App</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <X size={24} color={colors.text} />
-          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.appName}>QuickBill</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <X size={24} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <ScrollView style={styles.menuItems} showsVerticalScrollIndicator={false}>
@@ -277,8 +279,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   menuContainer: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
     backgroundColor: colors.white,
-    height: '100%',
     shadowColor: colors.black,
     shadowOffset: { width: 2, height: 0 },
     shadowOpacity: 0.3,
@@ -286,12 +291,16 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   header: {
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   appName: {
     fontSize: 18,

@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Menu } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
@@ -43,27 +44,28 @@ export default function RootLayout() {
   }
 
   return (
-    <HamburgerMenuContext.Provider value={{ isMenuOpen, toggleMenu, closeMenu }}>
-      <View style={styles.container}>
-        <StatusBar style="auto" />
-        <Stack
-          screenOptions={{
-            headerStyle: {
-              backgroundColor: colors.white,
-            },
-            headerTitleStyle: {
-              fontWeight: '600',
-              fontSize: 18,
-            },
-            headerTintColor: colors.text,
-            headerShadowVisible: false,
-            headerLeft: () => (
-              <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
-                <Menu size={24} color={colors.text} />
-              </TouchableOpacity>
-            ),
-          }}
-        >
+    <SafeAreaProvider>
+      <HamburgerMenuContext.Provider value={{ isMenuOpen, toggleMenu, closeMenu }}>
+        <SafeAreaView style={styles.container}>
+          <StatusBar style="auto" />
+          <Stack
+            screenOptions={{
+              headerStyle: {
+                backgroundColor: colors.white,
+              },
+              headerTitleStyle: {
+                fontWeight: '600',
+                fontSize: 18,
+              },
+              headerTintColor: colors.text,
+              headerShadowVisible: false,
+              headerLeft: () => (
+                <TouchableOpacity onPress={toggleMenu} style={styles.menuButton}>
+                  <Menu size={24} color={colors.text} />
+                </TouchableOpacity>
+              ),
+            }}
+          >
           <Stack.Screen
             name="(tabs)"
             options={{
@@ -209,16 +211,30 @@ export default function RootLayout() {
               headerTitle: 'Staff',
             }}
           />
-        </Stack>
-        <HamburgerMenu isVisible={isMenuOpen} onClose={closeMenu} />
-      </View>
-    </HamburgerMenuContext.Provider>
+          <Stack.Screen
+            name="(tabs)/items/add"
+            options={{
+              headerTitle: 'Add Item',
+            }}
+          />
+          <Stack.Screen
+            name="(tabs)/items/[id]"
+            options={{
+              headerTitle: 'Item Details',
+            }}
+          />
+          </Stack>
+          <HamburgerMenu isVisible={isMenuOpen} onClose={closeMenu} />
+        </SafeAreaView>
+      </HamburgerMenuContext.Provider>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.white,
   },
   menuButton: {
     padding: 8,

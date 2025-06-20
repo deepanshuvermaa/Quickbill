@@ -102,31 +102,6 @@ export const PrinterSelectionModal = ({
     } catch (error) {
       console.error('Error scanning for printers:', error);
       setError("Failed to scan for printers. Please try again.");
-      
-      // For testing, generate some simulated printers
-      const simulatedPrinters: PrinterDevice[] = [
-        {
-          id: 'sim1',
-          name: 'Thermal Printer (Simulated)',
-          address: '00:11:22:33:44:55',
-          paired: false,
-          connected: false,
-          type: 'thermal',
-          paperWidth: '58mm'
-        },
-        {
-          id: 'sim2',
-          name: 'Epson TM-T88VI (Simulated)',
-          address: '11:22:33:44:55:66',
-          paired: true,
-          connected: false,
-          type: 'pos',
-          paperWidth: '80mm'
-        }
-      ];
-      
-      console.log('Setting simulated printers for testing');
-      setPrinters(simulatedPrinters);
     } finally {
       setIsScanning(false);
     }
@@ -164,38 +139,6 @@ export const PrinterSelectionModal = ({
     } catch (error) {
       console.error('Error scanning for all devices:', error);
       setError("Failed to scan for Bluetooth devices. Please try again.");
-      
-      // For testing, generate some simulated devices
-      const simulatedDevices: PrinterDevice[] = [
-        {
-          id: 'sim1',
-          name: 'Thermal Printer (Simulated)',
-          address: '00:11:22:33:44:55',
-          paired: false,
-          connected: false,
-          type: 'thermal',
-          paperWidth: '58mm'
-        },
-        {
-          id: 'sim2',
-          name: 'Epson TM-T88VI (Simulated)',
-          address: '11:22:33:44:55:66',
-          paired: true,
-          connected: false,
-          type: 'pos',
-          paperWidth: '80mm'
-        },
-        {
-          id: 'sim3',
-          name: 'Bluetooth Speaker (Simulated)',
-          address: '22:33:44:55:66:77',
-          paired: false,
-          connected: false
-        }
-      ];
-      
-      console.log('Setting simulated devices for testing');
-      setAllDevices(simulatedDevices);
     } finally {
       setIsScanning(false);
     }

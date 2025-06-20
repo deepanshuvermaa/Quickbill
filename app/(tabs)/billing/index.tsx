@@ -13,7 +13,6 @@ import {
   Dimensions,
   KeyboardAvoidingView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useItemsStore } from '@/store/itemsStore';
@@ -415,7 +414,7 @@ export default function BillingScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <View style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: 'Billing',
@@ -815,10 +814,15 @@ export default function BillingScreen() {
             </TouchableOpacity>
           ) : (
             <View style={styles.verticalCartContainer}>
-              <View style={styles.cartHeader}>
+              <View style={styles.fullScreenCartHeader}>
                 <View style={styles.cartHeaderLeft}>
-                  <ShoppingCart size={20} color={colors.primary} />
-                  <Text style={styles.cartTitle}>Cart</Text>
+                  <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => setIsCartVisible(false)}
+                  >
+                    <ChevronDown size={24} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={styles.fullScreenCartTitle}>Cart</Text>
                   <View style={styles.cartBadge}>
                     <Text style={styles.cartBadgeText}>{cartItems.length}</Text>
                   </View>
@@ -846,13 +850,6 @@ export default function BillingScreen() {
                       <Trash2 size={16} color={colors.danger} />
                     </TouchableOpacity>
                   )}
-                  
-                  <TouchableOpacity
-                    style={styles.hideCartButton}
-                    onPress={() => setIsCartVisible(false)}
-                  >
-                    <ChevronDown size={20} color={colors.text} />
-                  </TouchableOpacity>
                 </View>
               </View>
               
@@ -1006,7 +1003,7 @@ export default function BillingScreen() {
         onClose={() => setShowPrinterModal(false)}
         onPrinterSelected={handlePrinterSelected}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -1014,6 +1011,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingBottom: Platform.OS === 'ios' ? 90 : 60, // Account for absolute positioned tab bar
+    paddingTop: Platform.OS === 'ios' ? 0 : 0, // Remove extra top padding
   },
   menuButton: {
     padding: 8,
@@ -1041,10 +1040,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   reducedItemsContainer: {
-    flex: 0.5, // Reduce the size when cart is visible
+    display: 'none', // Hide items completely when cart is visible
   },
   searchContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -1097,18 +1098,13 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // Add extra padding at the bottom to ensure items are visible
   },
   verticalCartContainer: {
-    maxHeight: height * 0.6, // Limit cart height to 60% of screen height
-    minHeight: 300, // Ensure a minimum height for the cart
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: Platform.OS === 'ios' ? 90 : 60, // Account for tab bar
     backgroundColor: colors.white,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    zIndex: 1000,
   },
   cartHeader: {
     flexDirection: 'row',
@@ -1120,6 +1116,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
+  },
+  fullScreenCartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'ios' ? 60 : 20, // Account for status bar
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.white,
+  },
+  backButton: {
+    padding: 4,
+    marginRight: 12,
+  },
+  fullScreenCartTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
   },
   cartHeaderLeft: {
     flexDirection: 'row',

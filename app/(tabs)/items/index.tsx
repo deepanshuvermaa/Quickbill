@@ -7,7 +7,8 @@ import {
   TouchableOpacity, 
   Alert,
   TextInput,
-  ScrollView
+  ScrollView,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -54,7 +55,7 @@ export default function ItemsScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen 
         options={{
           title: 'Inventory',
@@ -186,6 +187,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingBottom: Platform.OS === 'ios' ? 90 : 60, // Account for absolute positioned tab bar
   },
   backButton: {
     padding: 8,

@@ -101,7 +101,7 @@ export default function HistoryScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen 
         options={{ 
           title: 'Bill History',
@@ -165,6 +165,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingBottom: Platform.OS === 'ios' ? 90 : 60, // Account for absolute positioned tab bar
   },
   listContent: {
     padding: 16,
