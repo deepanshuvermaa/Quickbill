@@ -5,7 +5,9 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity,
-  Platform
+  Platform,
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -20,11 +22,14 @@ import {
   Download,
   Share2
 } from 'lucide-react-native';
+import { exportSalesReportToPDF, shareSalesReport, SalesReportData } from '@/utils/pdf-reports';
 
 export default function SalesReportScreen() {
   const router = useRouter();
   const { bills } = useBillsStore();
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   
   // Get current date
   const now = new Date();
@@ -139,6 +144,75 @@ export default function SalesReportScreen() {
         return 'This Week';
     }
   };
+
+  // Prepare report data
+  const getReportData = (): SalesReportData => ({
+    period: getPeriodLabel(),
+    totalSales,
+    averageSale,
+    transactionCount: filteredBills.length,
+    bills: filteredBills,
+    topSellingItems,
+    salesByPaymentMethod,
+  });
+
+  // Handle PDF export
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const reportData = getReportData();
+      const success = await exportSalesReportToPDF(reportData);
+      
+      if (success) {
+        Alert.alert(
+          'Export Successful',
+          'Sales report has been exported as PDF and saved to your device.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Export Failed',
+          'Unable to export the sales report. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert(
+        'Export Error',
+        'An error occurred while exporting the report.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Handle share report
+  const handleShareReport = async () => {
+    setIsSharing(true);
+    try {
+      const reportData = getReportData();
+      const success = await shareSalesReport(reportData);
+      
+      if (!success) {
+        Alert.alert(
+          'Share Failed',
+          'Unable to share the sales report. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      Alert.alert(
+        'Share Error',
+        'An error occurred while sharing the report.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsSharing(false);
+    }
+  };
   
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -157,22 +231,26 @@ export default function SalesReportScreen() {
             <View style={styles.headerButtons}>
               <TouchableOpacity 
                 style={styles.headerButton}
-                onPress={() => {
-                  // In a real app, this would export the report
-                  alert('Export functionality would be implemented here');
-                }}
+                onPress={handleExportPDF}
+                disabled={isExporting}
               >
-                <Download size={20} color={colors.primary} />
+                {isExporting ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Download size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.headerButton}
-                onPress={() => {
-                  // In a real app, this would share the report
-                  alert('Share functionality would be implemented here');
-                }}
+                onPress={handleShareReport}
+                disabled={isSharing}
               >
-                <Share2 size={20} color={colors.primary} />
+                {isSharing ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Share2 size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             </View>
           ),
