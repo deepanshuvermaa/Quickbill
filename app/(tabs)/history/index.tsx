@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useBillsStore } from '@/store/billsStore';
+import { useItemsStore } from '@/store/itemsStore';
 import { BillCard } from '@/components/BillCard';
 import { EmptyState } from '@/components/EmptyState';
 import { PrinterSelectionModal } from '@/components/PrinterSelectionModal';
@@ -20,6 +21,7 @@ export default function HistoryScreen() {
   const router = useRouter();
   const { toggleMenu } = useHamburgerMenu();
   const { bills, deleteBill, getBillById } = useBillsStore();
+  const { updateItemStock } = useItemsStore();
   const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState<string | null>(null);
   
@@ -92,8 +94,18 @@ export default function HistoryScreen() {
           text: "Delete", 
           style: "destructive",
           onPress: () => {
+            // Get the bill to restore inventory
+            const bill = getBillById(billId);
+            if (bill) {
+              // Restore inventory stock for each item in the bill
+              for (const item of bill.items) {
+                updateItemStock(item.id, item.quantity); // Add back to stock
+              }
+            }
+            
+            // Delete the bill
             deleteBill(billId);
-            Alert.alert("Success", "Bill deleted successfully");
+            Alert.alert("Success", "Bill deleted successfully and inventory restored");
           }
         }
       ]
@@ -168,7 +180,9 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 90 : 60, // Account for absolute positioned tab bar
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   printerButton: {
     padding: 8,

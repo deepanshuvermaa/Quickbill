@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
@@ -47,12 +47,15 @@ export default function AddItemScreen() {
     
     try {
       addItem({
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: name.trim(),
         price: Number(price),
         category: category.trim(),
         description: description.trim(),
         stock: stock.trim() ? Number(stock) : undefined,
         unit: unit.trim(),
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
       });
       
       Alert.alert(
@@ -66,7 +69,7 @@ export default function AddItemScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ title: 'Add New Item' }} />
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -161,7 +164,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
@@ -185,6 +190,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 90 : 60, // Account for absolute positioned tab bar
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.border,

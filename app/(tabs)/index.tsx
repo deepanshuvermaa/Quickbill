@@ -274,7 +274,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   scrollContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
     paddingBottom: Platform.OS === 'ios' ? 32 : 16,
   },
   statsContainer: {

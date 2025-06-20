@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { colors } from '@/constants/colors';
-import { Home, Package, ShoppingCart, Receipt, Settings } from 'lucide-react-native';
+import { Home, Package, ShoppingCart, Receipt, Settings, Plus } from 'lucide-react-native';
 
 export default function TabsLayout() {
 
@@ -40,37 +40,59 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color }) => <Home size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Home size={20} color={color} />,
         }}
       />
       <Tabs.Screen
         name="billing/index"
         options={{
           title: 'Billing',
-          tabBarIcon: ({ color }) => <ShoppingCart size={24} color={color} />,
-          href: '/billing', // Explicitly map to the billing route
+          tabBarIcon: ({ color }) => <ShoppingCart size={20} color={color} />,
+          href: '/billing',
         }}
       />
       <Tabs.Screen
         name="history/index"
         options={{
           title: 'History',
-          tabBarIcon: ({ color }) => <Receipt size={24} color={color} />,
-          href: '/history', // Explicitly map to the history route
+          tabBarIcon: ({ color }) => <Receipt size={20} color={color} />,
+          href: '/history',
         }}
       />
       <Tabs.Screen
         name="settings/index"
         options={{
           title: 'Settings',
-          tabBarIcon: ({ color }) => <Settings size={24} color={color} />,
-          href: '/settings', // Explicitly map to the settings route
+          tabBarIcon: ({ color }) => <Settings size={20} color={color} />,
+          href: '/settings',
+        }}
+      />
+      <Tabs.Screen
+        name="items/add"
+        options={{
+          title: 'Add Item',
+          tabBarIcon: ({ color }) => <Plus size={20} color={color} />,
+          href: '/items/add',
+        }}
+      />
+      <Tabs.Screen
+        name="items/index"
+        options={{
+          title: 'Inventory',
+          tabBarIcon: ({ color }) => <Package size={20} color={color} />,
+          href: '/items',
+        }}
+      />
+      <Tabs.Screen
+        name="items/[id]"
+        options={{
+          href: null, // Hide item details from tab bar
         }}
       />
       <Tabs.Screen
         name="items"
         options={{
-          href: null, // This will hide the items tab from the tab bar
+          href: null, // Hide the items directory tab
         }}
       />
     </Tabs>
