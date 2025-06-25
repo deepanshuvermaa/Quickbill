@@ -17,6 +17,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useItemsStore } from '@/store/itemsStore';
 import { useCartStore } from '@/store/cartStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { createBillFromCart } from '@/store/billsStore';
 import { ItemCard } from '@/components/ItemCard';
 import { CartItemCard } from '@/components/CartItemCard';
@@ -39,7 +40,8 @@ import {
 import { 
   ensureBluetoothReady, 
   PrinterDevice, 
-  printBillToPrinter
+  printBillToPrinter,
+  testPrinterConnection
 } from '@/utils/bluetooth-print';
 import { Item, CartItem, PaymentMethod } from '@/types';
 import { printOrShareBill } from '@/utils/print';
@@ -55,6 +57,7 @@ export default function BillingScreen() {
   const { toggleMenu } = useHamburgerMenu();
   const { items, initializeWithMockData, checkStockAvailability, updateItemStock } = useItemsStore();
   const { bills, getBillById, deleteBill } = useBillsStore();
+  const { primaryPrinter, setPrimaryPrinter } = useSettingsStore();
   const { 
     items: cartItems, 
     customerName, 
@@ -194,13 +197,16 @@ export default function BillingScreen() {
     
     try {
       // Create the bill
-      const billId = createBillFromCart();
+      const billId = await createBillFromCart();
       setCreatedBillId(billId);
       
       // Update inventory stock for each item in the bill
       for (const item of cartItems) {
         updateItemStock(item.id, -item.quantity); // Reduce stock by the quantity sold
       }
+      
+      // Auto-clear cart after successful bill creation
+      clearCart();
       
       Alert.alert(
         "Success",
@@ -226,8 +232,7 @@ export default function BillingScreen() {
           { 
             text: "New Bill", 
             onPress: () => {
-              // Reset the form for a new bill
-              clearCart();
+              // Reset the form for a new bill (cart already cleared)
               setCreatedBillId(null);
             }
           }
@@ -277,8 +282,70 @@ export default function BillingScreen() {
         return;
       }
       
-      // Show printer selection modal
-      setShowPrinterModal(true);
+      // Check if there's a primary printer set
+      if (primaryPrinter) {
+        // Test connection to primary printer
+        const connectionWorking = await testPrinterConnection(primaryPrinter);
+        
+        if (connectionWorking) {
+          // Print directly to primary printer
+          try {
+            const success = await printBillToPrinter(bill, primaryPrinter);
+            
+            if (success) {
+              Alert.alert("Success", `Bill sent to ${primaryPrinter.name} successfully`);
+            } else {
+              // Connection failed, show options
+              Alert.alert(
+                "Print Failed",
+                `Failed to print to ${primaryPrinter.name}. Would you like to select a different printer?`,
+                [
+                  { text: "Cancel", style: "cancel" },
+                  { 
+                    text: "Select Printer", 
+                    onPress: () => {
+                      setShowPrinterModal(true);
+                    }
+                  }
+                ]
+              );
+            }
+          } catch (error) {
+            console.error('Error printing to primary printer:', error);
+            Alert.alert(
+              "Print Error",
+              `Error printing to ${primaryPrinter.name}. Would you like to select a different printer?`,
+              [
+                { text: "Cancel", style: "cancel" },
+                { 
+                  text: "Select Printer", 
+                  onPress: () => {
+                    setShowPrinterModal(true);
+                  }
+                }
+              ]
+            );
+          }
+        } else {
+          // Primary printer not available, show options
+          Alert.alert(
+            "Printer Unavailable",
+            `Primary printer "${primaryPrinter.name}" is not available. Would you like to select a different printer?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Select Printer", 
+                onPress: () => {
+                  setShowPrinterModal(true);
+                }
+              }
+            ]
+          );
+        }
+      } else {
+        // No primary printer set, show printer selection modal
+        setShowPrinterModal(true);
+      }
     } catch (error) {
       console.error("Error preparing to print:", error);
       Alert.alert("Error", "Failed to prepare for printing. Please try again.");
@@ -317,7 +384,17 @@ export default function BillingScreen() {
       const success = await printBillToPrinter(bill, printer);
       
       if (success) {
-        Alert.alert("Success", "Bill sent to printer successfully");
+        // Set this printer as the primary printer for future use
+        setPrimaryPrinter({
+          id: printer.id,
+          name: printer.name,
+          address: printer.address
+        });
+        
+        Alert.alert(
+          "Success", 
+          `Bill sent to ${printer.name} successfully.\n\nThis printer has been set as your primary printer for future printing.`
+        );
       } else {
         Alert.alert("Error", "Failed to print bill. Please check printer connection.");
       }
@@ -1011,8 +1088,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 95 : 65, // Account for absolute positioned tab bar
-    paddingTop: Platform.OS === 'ios' ? 0 : 0, // Remove extra top padding
+    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
+    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   menuButton: {
     padding: 8,
@@ -1045,7 +1122,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    paddingBottom: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -1073,7 +1150,7 @@ const styles = StyleSheet.create({
   },
   categoriesList: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   categoryChip: {
     paddingHorizontal: 16,
@@ -1095,7 +1172,7 @@ const styles = StyleSheet.create({
   },
   itemsList: {
     padding: 16,
-    paddingBottom: 100, // Add extra padding at the bottom to ensure items are visible
+    paddingBottom: 50, // Add padding at the bottom to ensure items are visible
   },
   verticalCartContainer: {
     position: 'absolute',
@@ -1122,7 +1199,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 60 : 20, // Account for status bar
+    paddingTop: Platform.OS === 'ios' ? 44 : 16, // Account for status bar
     paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -1209,7 +1286,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cartContentContainer: {
-    paddingBottom: 20, // Add padding to ensure the bottom content is visible when scrolling
+    paddingBottom: 12, // Add padding to ensure the bottom content is visible when scrolling
   },
   cartEmptyState: {
     padding: 16,
@@ -1238,14 +1315,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   summaryInput: {
-    width: 50,
-    height: 30,
+    width: 60,
+    height: 36,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 4,
     paddingHorizontal: 8,
     marginLeft: 8,
     textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    backgroundColor: colors.white,
   },
   summaryValue: {
     fontSize: 16,
@@ -1283,10 +1364,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   inputRow: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -1332,7 +1413,7 @@ const styles = StyleSheet.create({
   },
   createBillButton: {
     marginTop: 8,
-    marginBottom: 20, // Add bottom margin to ensure button is visible when scrolling
+    marginBottom: 12, // Add bottom margin to ensure button is visible when scrolling
   },
   buttonLoader: {
     marginRight: 8,
@@ -1342,8 +1423,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    marginTop: -8,
-    marginBottom: 8,
+    marginTop: -4,
+    marginBottom: 6,
     marginLeft: 16,
     alignSelf: 'flex-start',
   },

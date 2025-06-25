@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useAuthStore } from '@/store/authStore';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { 
@@ -27,7 +28,8 @@ import {
   LogOut,
   ChevronRight,
   ArrowLeft,
-  Menu
+  Menu,
+  Hash
 } from 'lucide-react-native';
 import { useHamburgerMenu } from '../../_layout';
 
@@ -36,10 +38,14 @@ export default function SettingsScreen() {
   const { toggleMenu } = useHamburgerMenu();
   const { 
     businessInfo, 
-    defaultTaxRate, 
+    defaultTaxRate,
+    primaryPrinter, 
     updateBusinessInfo, 
-    setDefaultTaxRate 
+    setDefaultTaxRate,
+    setPrimaryPrinter 
   } = useSettingsStore();
+  
+  const { logout, isAuthenticated } = useAuthStore();
   
   const handleSaveBusinessInfo = () => {
     Alert.alert("Success", "Business information updated successfully");
@@ -49,6 +55,26 @@ export default function SettingsScreen() {
     Alert.alert("Success", "Default tax rate updated successfully");
   };
   
+  const handleDisconnectPrinter = () => {
+    if (!primaryPrinter) return;
+    
+    Alert.alert(
+      "Disconnect Printer",
+      `Are you sure you want to disconnect from "${primaryPrinter.name}"? You will need to select a printer again when printing.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Disconnect", 
+          style: "destructive",
+          onPress: () => {
+            setPrimaryPrinter(null);
+            Alert.alert("Success", "Primary printer disconnected successfully");
+          }
+        }
+      ]
+    );
+  };
+
   const handleLogout = () => {
     Alert.alert(
       "Logout",
@@ -59,8 +85,8 @@ export default function SettingsScreen() {
           text: "Logout", 
           style: "destructive",
           onPress: () => {
-            // In a real app, we would clear auth state here
-            Alert.alert("Logged Out", "You have been logged out successfully");
+            logout();
+            // AuthGuard will handle the redirect to login screen
           }
         }
       ]
@@ -68,7 +94,7 @@ export default function SettingsScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: 'Settings',
@@ -180,13 +206,48 @@ export default function SettingsScreen() {
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Printer Settings</Text>
           
+          {primaryPrinter && (
+            <View style={styles.primaryPrinterContainer}>
+              <View style={styles.settingItemLeft}>
+                <Printer size={20} color={colors.success} style={styles.settingIcon} />
+                <View>
+                  <Text style={styles.settingText}>Primary Printer</Text>
+                  <Text style={styles.printerName}>{primaryPrinter.name}</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.disconnectButton}
+                onPress={handleDisconnectPrinter}
+              >
+                <Text style={styles.disconnectText}>Disconnect</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
           <TouchableOpacity 
             style={styles.settingItem}
             onPress={() => router.push('/printer-settings')}
           >
             <View style={styles.settingItemLeft}>
               <Printer size={20} color={colors.primary} style={styles.settingIcon} />
-              <Text style={styles.settingText}>Manage Bluetooth Printers</Text>
+              <Text style={styles.settingText}>
+                {primaryPrinter ? 'Change Bluetooth Printer' : 'Manage Bluetooth Printers'}
+              </Text>
+            </View>
+            <ChevronRight size={20} color={colors.gray} />
+          </TouchableOpacity>
+        </Card>
+        
+        <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Invoice Settings</Text>
+          
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/invoice-settings')}
+          >
+            <View style={styles.settingItemLeft}>
+              <Hash size={20} color={colors.primary} style={styles.settingIcon} />
+              <Text style={styles.settingText}>Invoice Numbering</Text>
             </View>
             <ChevronRight size={20} color={colors.gray} />
           </TouchableOpacity>
@@ -218,15 +279,17 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </Card>
         
-        <Button
-          title="Logout"
-          onPress={handleLogout}
-          variant="danger"
-          icon={<LogOut size={18} color={colors.white} />}
-          style={styles.logoutButton}
-        />
+        {isAuthenticated && (
+          <Button
+            title="Logout"
+            onPress={handleLogout}
+            variant="danger"
+            icon={<LogOut size={18} color={colors.white} />}
+            style={styles.logoutButton}
+          />
+        )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -234,7 +297,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 95 : 65, // Account for absolute positioned tab bar
+    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
+    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   menuButton: {
     padding: 8,
@@ -242,18 +306,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 0,
     paddingBottom: 32,
   },
   section: {
-    marginBottom: 16,
+    marginBottom: 8,
     padding: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -262,7 +326,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 8,
     paddingHorizontal: 12,
-    marginBottom: 12,
+    marginBottom: 8,
     backgroundColor: colors.white,
   },
   inputIcon: {
@@ -275,7 +339,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   saveButton: {
-    marginTop: 8,
+    marginTop: 4,
   },
   settingItem: {
     flexDirection: 'row',
@@ -299,5 +363,32 @@ const styles = StyleSheet.create({
   logoutButton: {
     marginTop: 8,
     marginBottom: 24,
+  },
+  primaryPrinterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    backgroundColor: colors.grayLight,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  printerName: {
+    fontSize: 14,
+    color: colors.textLight,
+    marginTop: 2,
+  },
+  disconnectButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
+  disconnectText: {
+    fontSize: 14,
+    color: colors.danger,
+    fontWeight: '500',
   },
 });

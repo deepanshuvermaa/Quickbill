@@ -6,6 +6,7 @@ export interface Item {
   description?: string;
   stock?: number;
   unit?: string;
+  sku?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -17,6 +18,7 @@ export interface CartItem extends Item {
 
 export interface Bill {
   id: string;
+  invoiceNumber?: string; // New field for display invoice number
   customerName: string;
   customerPhone?: string;
   items: CartItem[];

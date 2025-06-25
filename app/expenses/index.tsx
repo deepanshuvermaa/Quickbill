@@ -25,10 +25,18 @@ import {
   ArrowLeft
 } from 'lucide-react-native';
 import { useExpensesStore } from '@/store/expensesStore';
+import { useAuthStore } from '@/store/authStore';
+import { LoginToContinue } from '@/components/LoginToContinue';
 
 export default function ExpensesScreen() {
   const router = useRouter();
+  const { hasAccess } = useAuthStore();
   const { expenses, deleteExpense } = useExpensesStore();
+  
+  // Check if user has access to expenses
+  if (!hasAccess('expenses')) {
+    return <LoginToContinue feature="expenses" />;
+  }
   const [searchQuery, setSearchQuery] = useState('');
   
   const filteredExpenses = expenses.filter(expense => 
@@ -230,7 +238,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 60,
   },
   expenseCard: {
     marginBottom: 12,

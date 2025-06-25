@@ -19,11 +19,13 @@
     },
     "production": {
       "android": {
-        "buildType": "app-bundle",
-        "withoutCredentials": false
-      },
-      "env": {
-        "EXPO_NO_NATIVE_BUILD": "1"
+        "buildType": "app-bundle"
+      }
+    },
+    "production-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
       }
     }
   },

@@ -33,10 +33,12 @@ export default function TabsLayout() {
         },
         headerStyle: {
           backgroundColor: colors.white,
+          height: Platform.OS === 'ios' ? 88 : 56, // Reduced header height
         },
         headerTitleStyle: {
           fontWeight: '600',
           fontSize: 18,
+          marginTop: Platform.OS === 'ios' ? -4 : 0, // Adjust title position
         },
         headerTintColor: colors.text,
       }}

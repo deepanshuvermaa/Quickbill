@@ -11,12 +11,20 @@ interface BusinessInfo {
   logo?: string;
 }
 
+interface PrimaryPrinter {
+  id: string;
+  name: string;
+  address: string;
+}
+
 interface SettingsState {
   businessInfo: BusinessInfo;
   defaultTaxRate: number;
+  primaryPrinter: PrimaryPrinter | null;
   
   updateBusinessInfo: (info: Partial<BusinessInfo>) => void;
   setDefaultTaxRate: (rate: number) => void;
+  setPrimaryPrinter: (printer: PrimaryPrinter | null) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -30,6 +38,7 @@ export const useSettingsStore = create<SettingsState>()(
         taxId: "",
       },
       defaultTaxRate: 0,
+      primaryPrinter: null,
       
       updateBusinessInfo: (info) => {
         set((state) => ({
@@ -39,6 +48,10 @@ export const useSettingsStore = create<SettingsState>()(
       
       setDefaultTaxRate: (rate) => {
         set({ defaultTaxRate: rate });
+      },
+      
+      setPrimaryPrinter: (printer) => {
+        set({ primaryPrinter: printer });
       },
     }),
     {

@@ -72,9 +72,9 @@ export const printOrShareBill = async (bill: Bill) => {
               ${bill.businessTaxId ? `<p>Tax ID: ${bill.businessTaxId}</p>` : ''}
             </div>
             
-            <h3>BILL #${bill.id.substring(0, 8)}</h3>
+            <h3>${bill.invoiceNumber ? `INVOICE #${bill.invoiceNumber}` : `BILL #${bill.id.substring(0, 8)}`}</h3>
             <p>Date: ${new Date(bill.createdAt).toLocaleDateString()}</p>
-            <p>Time: ${new Date(bill.createdAt).toLocaleTimeString()}</p>
+            <p>Time: ${new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
             
             <p>Customer: ${bill.customerName}</p>
             ${bill.customerPhone ? `<p>Phone: ${bill.customerPhone}</p>` : ''}
@@ -94,8 +94,8 @@ export const printOrShareBill = async (bill: Bill) => {
               <div class="item-row">
                 <span style="width: 50%">${item.name}</span>
                 <span style="width: 15%; text-align: center">${item.quantity}</span>
-                <span style="width: 15%; text-align: right">₹${item.price.toFixed(2)}</span>
-                <span style="width: 20%; text-align: right">₹${(item.price * item.quantity).toFixed(2)}</span>
+                <span style="width: 15%; text-align: right">Rs.${item.price.toFixed(2)}</span>
+                <span style="width: 20%; text-align: right">Rs.${(item.price * item.quantity).toFixed(2)}</span>
               </div>
             `).join('')}
             
@@ -103,20 +103,20 @@ export const printOrShareBill = async (bill: Bill) => {
             
             <div class="item-row">
               <span>Subtotal:</span>
-              <span>₹${bill.subtotal.toFixed(2)}</span>
+              <span>Rs.${bill.subtotal.toFixed(2)}</span>
             </div>
             
             ${bill.discount > 0 ? `
               <div class="item-row">
                 <span>Discount:</span>
-                <span>-₹${bill.discount.toFixed(2)}</span>
+                <span>-Rs.${bill.discount.toFixed(2)}</span>
               </div>
             ` : ''}
             
             ${bill.tax > 0 ? `
               <div class="item-row">
                 <span>Tax:</span>
-                <span>₹${bill.tax.toFixed(2)}</span>
+                <span>Rs.${bill.tax.toFixed(2)}</span>
               </div>
             ` : ''}
             
@@ -124,7 +124,7 @@ export const printOrShareBill = async (bill: Bill) => {
             
             <div class="item-row total-row">
               <span>TOTAL:</span>
-              <span>₹${bill.total.toFixed(2)}</span>
+              <span>Rs.${bill.total.toFixed(2)}</span>
             </div>
             
             <div class="divider"></div>
@@ -192,10 +192,15 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
     return text.substring(0, maxLength - 3) + '...';
   };
   
-  // Format date
+  // Format date and time properly
   const date = new Date(bill.createdAt);
-  const dateStr = date.toLocaleDateString();
-  const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const dateStr = date.toLocaleDateString('en-IN');
+  const timeStr = date.toLocaleTimeString('en-IN', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata'
+  });
   
   // Build header
   let output = '';
@@ -210,122 +215,122 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
     output += centerText(bill.businessEmail, lineWidth) + '\n';
   }
   
-  output += '\n';
-  output += centerText('INVOICE', lineWidth) + '\n\n';
+  // Add GST/Tax ID if available
+  if (bill.businessTaxId) {
+    output += centerText(`GST: ${bill.businessTaxId}`, lineWidth) + '\n';
+  }
   
-  // Date and invoice number
-  output += `${dateStr} ${timeStr}`.padEnd(lineWidth / 2) + 
-            `Invoice: ${bill.id.substring(0, 8)}`.padStart(lineWidth / 2) + '\n';
+  output += '\n';
+  output += centerText('TAX INVOICE', lineWidth) + '\n';
+  output += divider + '\n';
+  
+  // Date, time and invoice number on separate lines for clarity
+  output += 'Date: ' + dateStr + '\n';
+  output += 'Time: ' + timeStr + '\n';
+  output += 'Invoice: ' + (bill.invoiceNumber ? bill.invoiceNumber.toUpperCase() : bill.id.substring(0, 8).toUpperCase()) + '\n';
   
   output += divider + '\n';
   
-  // Customer info
-  output += `${bill.customerName}\n`;
+  // Customer info - centered
+  output += centerText('Customer Details', lineWidth) + '\n';
+  output += centerText(bill.customerName, lineWidth) + '\n';
   if (bill.customerPhone) {
-    output += `Contact: ${bill.customerPhone}\n`;
+    output += centerText(bill.customerPhone, lineWidth) + '\n';
   }
   
   output += divider + '\n';
   
-  // Item header
+  // Item header - simplified for better alignment
   if (format === '2inch') {
     // For 2-inch receipt (32 chars)
-    // Item    Qty  Price  Total
-    // 12      4    7      9
-    output += 'Item'.padEnd(12) + 'Qty'.padEnd(4) + 'Price'.padEnd(7) + 'Total'.padEnd(9) + '\n';
+    output += 'Item'.padEnd(16) + 'Qty'.padEnd(4) + 'Price'.padEnd(6) + 'Total'.padEnd(6) + '\n';
   } else {
     // For 3-inch receipt (48 chars)
-    // Item              Qty   Price   Total
-    // 20                5     10      13
-    output += 'Item'.padEnd(20) + 'Qty'.padEnd(5) + 'Price'.padEnd(10) + 'Total'.padEnd(13) + '\n';
+    output += 'Item'.padEnd(26) + 'Qty'.padEnd(6) + 'Price'.padEnd(8) + 'Total'.padEnd(8) + '\n';
   }
   
   output += divider + '\n';
   
-  // Items
+  // Items - without Rs. prefix for cleaner look
   for (const item of bill.items) {
     if (format === '2inch') {
-      const name = truncate(item.name, 11);
+      const name = truncate(item.name, 15);
       const qty = item.quantity.toString();
-      const price = `₹${item.price.toFixed(2)}`;
-      const total = `₹${(item.price * item.quantity).toFixed(2)}`;
+      const price = item.price.toFixed(0);
+      const total = (item.price * item.quantity).toFixed(0);
       
-      output += name.padEnd(12) + 
+      output += name.padEnd(16) + 
                 qty.padEnd(4) + 
-                price.padEnd(7) + 
-                total.padEnd(9) + '\n';
+                price.padEnd(6) + 
+                total.padEnd(6) + '\n';
     } else {
-      const name = truncate(item.name, 19);
+      const name = truncate(item.name, 25);
       const qty = item.quantity.toString();
-      const price = `₹${item.price.toFixed(2)}`;
-      const total = `₹${(item.price * item.quantity).toFixed(2)}`;
+      const price = item.price.toFixed(0);
+      const total = (item.price * item.quantity).toFixed(0);
       
-      output += name.padEnd(20) + 
-                qty.padEnd(5) + 
-                price.padEnd(10) + 
-                total.padEnd(13) + '\n';
+      output += name.padEnd(26) + 
+                qty.padEnd(6) + 
+                price.padEnd(8) + 
+                total.padEnd(8) + '\n';
     }
   }
   
   output += divider + '\n';
   
-  // Totals
+  // Totals section - cleaner formatting
   if (format === '2inch') {
-    output += 'Items: ' + bill.items.length + '\n\n';
-    
-    output += 'Sub Total'.padEnd(22) + `₹${bill.subtotal.toFixed(2)}`.padStart(10) + '\n';
+    output += 'Sub Total:'.padEnd(20) + bill.subtotal.toFixed(2).padStart(12) + '\n';
     
     if (bill.discount > 0) {
-      output += 'Discount'.padEnd(22) + `₹${bill.discount.toFixed(2)}`.padStart(10) + '\n';
+      output += 'Discount:'.padEnd(20) + bill.discount.toFixed(2).padStart(12) + '\n';
     }
     
     if (bill.tax > 0) {
-      output += 'Tax'.padEnd(22) + `₹${bill.tax.toFixed(2)}`.padStart(10) + '\n';
+      const taxPercent = ((bill.tax / bill.subtotal) * 100).toFixed(0);
+      output += `GST (${taxPercent}%):`.padEnd(20) + bill.tax.toFixed(2).padStart(12) + '\n';
     }
     
     output += divider + '\n';
-    
-    output += 'Total'.padEnd(22) + `₹${bill.total.toFixed(2)}`.padStart(10) + '\n';
+    output += 'TOTAL:'.padEnd(20) + bill.total.toFixed(2).padStart(12) + '\n';
   } else {
-    output += 'Items: ' + bill.items.length + '\n\n';
-    
-    output += 'Sub Total'.padEnd(38) + `₹${bill.subtotal.toFixed(2)}`.padStart(10) + '\n';
+    output += 'Sub Total:'.padEnd(32) + bill.subtotal.toFixed(2).padStart(16) + '\n';
     
     if (bill.discount > 0) {
-      output += 'Discount'.padEnd(38) + `₹${bill.discount.toFixed(2)}`.padStart(10) + '\n';
+      output += 'Discount:'.padEnd(32) + bill.discount.toFixed(2).padStart(16) + '\n';
     }
     
     if (bill.tax > 0) {
-      output += 'Tax'.padEnd(38) + `₹${bill.tax.toFixed(2)}`.padStart(10) + '\n';
+      const taxPercent = ((bill.tax / bill.subtotal) * 100).toFixed(0);
+      output += `GST (${taxPercent}%):`.padEnd(32) + bill.tax.toFixed(2).padStart(16) + '\n';
     }
     
     output += divider + '\n';
-    
-    output += 'Total'.padEnd(38) + `₹${bill.total.toFixed(2)}`.padStart(10) + '\n';
+    output += 'TOTAL:'.padEnd(32) + bill.total.toFixed(2).padStart(16) + '\n';
   }
   
   output += divider + '\n';
   
   // Payment method
-  output += centerText('Payment Mode', lineWidth) + '\n';
-  
-  // Format payment method (replace underscores with spaces and capitalize)
   const formattedPaymentMethod = bill.paymentMethod
     .split('_')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
   
-  output += centerText(`${formattedPaymentMethod}: ₹${bill.total.toFixed(2)}`, lineWidth) + '\n';
-  
-  output += divider + '\n';
+  output += 'Payment: ' + formattedPaymentMethod + '\n';
   
   // Notes
   if (bill.notes) {
-    output += `Notes: ${bill.notes}\n\n`;
+    output += divider + '\n';
+    output += centerText('Notes', lineWidth) + '\n';
+    output += bill.notes + '\n';
   }
   
+  output += divider + '\n';
+  
   // Footer
-  output += centerText('Thank You', lineWidth) + '\n';
+  output += centerText('Thank You!', lineWidth) + '\n';
+  output += centerText('Visit Again', lineWidth) + '\n';
   
   return output;
 };

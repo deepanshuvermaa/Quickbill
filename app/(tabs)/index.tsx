@@ -13,6 +13,8 @@ import { colors } from '@/constants/colors';
 import { StatCard } from '@/components/StatCard';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
+import { TrialBanner } from '@/components/TrialBanner';
+import { GuestBanner } from '@/components/GuestBanner';
 import { useBillsStore } from '@/store/billsStore';
 import { useItemsStore } from '@/store/itemsStore';
 import { useCustomersStore } from '@/store/customersStore';
@@ -83,7 +85,7 @@ export default function DashboardScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: 'Dashboard',
@@ -99,6 +101,9 @@ export default function DashboardScreen() {
       />
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <GuestBanner />
+        <TrialBanner />
+        
         <View style={styles.statsContainer}>
           <StatCard
             title="Total Sales"
@@ -259,7 +264,7 @@ export default function DashboardScreen() {
           />
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -267,7 +272,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 95 : 65, // Account for absolute positioned tab bar
+    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
+    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   menuButton: {
     padding: 8,
@@ -275,18 +281,18 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 16,
+    paddingTop: 0,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
   },
   statsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   row: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   card: {
     flex: 1,
@@ -339,15 +345,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   sectionCard: {
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 8,
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -397,7 +403,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   createBillButton: {
-    margin: 16,
+    margin: 12,
   },
   stockItem: {
     flexDirection: 'row',
@@ -432,6 +438,6 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   addItemButton: {
-    margin: 16,
+    margin: 12,
   },
 });

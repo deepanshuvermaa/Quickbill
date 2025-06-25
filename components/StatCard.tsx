@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
     borderRadius: isSmallScreen ? 10 : 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   content: {
     width: '100%',
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: isSmallScreen ? 12 : 14,
     color: colors.textLight,
-    marginBottom: 4,
+    marginBottom: 2,
     textAlign: 'center',
   },
   value: {

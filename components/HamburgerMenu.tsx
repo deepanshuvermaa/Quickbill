@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { colors } from '@/constants/colors';
+import { useAuthStore } from '@/store/authStore';
 import {
   Home,
   ShoppingCart,
@@ -18,7 +19,7 @@ import {
   FileText,
   Users,
   CreditCard,
-  BarChart2,
+  BarChart3,
   Settings,
   HelpCircle,
   LogOut,
@@ -29,6 +30,8 @@ import {
   Store,
   UserPlus,
   X,
+  Lock,
+  LogIn,
 } from 'lucide-react-native';
 
 interface HamburgerMenuProps {
@@ -39,6 +42,7 @@ interface HamburgerMenuProps {
 export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { isAuthenticated, isGuestMode, hasAccess, logout } = useAuthStore();
   const slideAnim = useRef(new Animated.Value(0)).current;
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
@@ -61,9 +65,25 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
     }
   }, [isVisible, slideAnim]);
 
-  const handleNavigate = (path: string) => {
+  const handleNavigate = (path: string, feature?: string) => {
     onClose();
-    router.push(path);
+    
+    // Debug: console.log('HamburgerMenu navigate:', { path, feature, isGuestMode, hasAccess: feature ? hasAccess(feature) : 'N/A' });
+    
+    // Check if guest has access to this feature
+    if (isGuestMode && feature && !hasAccess(feature)) {
+      // Redirect to login instead
+      // Debug: console.log('Redirecting guest to login');
+      router.push('/auth/login' as any);
+      return;
+    }
+    
+    router.push(path as any);
+  };
+  
+  const handleLogout = () => {
+    onClose();
+    logout();
   };
 
   const isActive = (path: string) => {
@@ -138,56 +158,72 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
             icon={<Receipt size={20} color={isActive('/(tabs)/history') ? colors.primary : colors.text} />}
             label="Bill History"
             isActive={isActive('/(tabs)/history')}
-            onPress={() => handleNavigate('/(tabs)/history')}
+            onPress={() => handleNavigate('/(tabs)/history', 'history')}
+            isRestricted={!hasAccess('history')}
+            isGuestMode={isGuestMode}
           />
           
           <MenuItem
             icon={<Package size={20} color={isActive('/(tabs)/items') ? colors.primary : colors.text} />}
             label="Items"
             isActive={isActive('/(tabs)/items')}
-            onPress={() => handleNavigate('/(tabs)/items')}
+            onPress={() => handleNavigate('/(tabs)/items', 'items_view')}
+            isRestricted={false} // Guests can view items
+            isGuestMode={isGuestMode}
           />
           
           <MenuItem
             icon={<FileText size={20} color={isActive('/quotations') ? colors.primary : colors.text} />}
             label="Quotations"
             isActive={isActive('/quotations')}
-            onPress={() => handleNavigate('/quotations')}
+            onPress={() => handleNavigate('/quotations', 'quotations')}
+            isRestricted={!hasAccess('quotations')}
+            isGuestMode={isGuestMode}
           />
           
           <MenuItem
             icon={<CreditCard size={20} color={isActive('/credit-notes') ? colors.primary : colors.text} />}
             label="Credit Notes"
             isActive={isActive('/credit-notes')}
-            onPress={() => handleNavigate('/credit-notes')}
+            onPress={() => handleNavigate('/credit-notes', 'credit_notes')}
+            isRestricted={!hasAccess('credit_notes')}
+            isGuestMode={isGuestMode}
           />
           
           <MenuItem
             icon={<Users size={20} color={isActive('/customers') ? colors.primary : colors.text} />}
             label="Customers"
             isActive={isActive('/customers')}
-            onPress={() => handleNavigate('/customers')}
+            onPress={() => handleNavigate('/customers', 'customers')}
+            isRestricted={!hasAccess('customers')}
+            isGuestMode={isGuestMode}
           />
           
           <MenuItem
             icon={<Calendar size={20} color={isActive('/expenses') ? colors.primary : colors.text} />}
             label="Expenses"
             isActive={isActive('/expenses')}
-            onPress={() => handleNavigate('/expenses')}
+            onPress={() => handleNavigate('/expenses', 'expenses')}
+            isRestricted={!hasAccess('expenses')}
+            isGuestMode={isGuestMode}
           />
           
           <MenuItem
             icon={<UserPlus size={20} color={isActive('/staff') ? colors.primary : colors.text} />}
             label="Staff"
             isActive={isActive('/staff')}
-            onPress={() => handleNavigate('/staff')}
+            onPress={() => handleNavigate('/staff', 'staff')}
+            isRestricted={!hasAccess('staff')}
+            isGuestMode={isGuestMode}
           />
           
           <MenuItem
-            icon={<BarChart2 size={20} color={isActive('/reports') ? colors.primary : colors.text} />}
+            icon={<BarChart3 size={20} color={isActive('/reports') ? colors.primary : colors.text} />}
             label="Reports"
             isActive={isActive('/reports')}
-            onPress={() => handleNavigate('/reports')}
+            onPress={() => handleNavigate('/reports', 'reports')}
+            isRestricted={!hasAccess('reports')}
+            isGuestMode={isGuestMode}
           />
           
           {Platform.OS !== 'web' && (
@@ -203,10 +239,26 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
             icon={<Settings size={20} color={isActive('/(tabs)/settings') ? colors.primary : colors.text} />}
             label="Settings"
             isActive={isActive('/(tabs)/settings')}
-            onPress={() => handleNavigate('/(tabs)/settings')}
+            onPress={() => handleNavigate('/(tabs)/settings', 'settings')}
+            isRestricted={!hasAccess('settings')}
+            isGuestMode={isGuestMode}
           />
           
           <View style={styles.divider} />
+          
+          {isGuestMode && (
+            <MenuItem
+              icon={<LogIn size={20} color={colors.primary} />}
+              label="Login to Access All Features"
+              isActive={false}
+              labelStyle={{ color: colors.primary, fontWeight: '600' }}
+              onPress={() => {
+                // Debug: console.log('HamburgerMenu login button pressed');
+                onClose();
+                router.push('/auth/login' as any);
+              }}
+            />
+          )}
           
           <MenuItem
             icon={<HelpCircle size={20} color={colors.text} />}
@@ -215,20 +267,15 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
             onPress={() => {}}
           />
           
-          <MenuItem
-            icon={<Store size={20} color={colors.text} />}
-            label="Marketplace"
-            isActive={false}
-            onPress={() => {}}
-          />
-          
-          <MenuItem
-            icon={<LogOut size={20} color={colors.danger} />}
-            label="Logout"
-            isActive={false}
-            labelStyle={{ color: colors.danger }}
-            onPress={() => {}}
-          />
+          {!isGuestMode && (
+            <MenuItem
+              icon={<LogOut size={20} color={colors.danger} />}
+              label="Logout"
+              isActive={false}
+              labelStyle={{ color: colors.danger }}
+              onPress={handleLogout}
+            />
+          )}
         </ScrollView>
         
         <View style={styles.footer}>
@@ -245,21 +292,48 @@ interface MenuItemProps {
   isActive: boolean;
   onPress: () => void;
   labelStyle?: object;
+  isRestricted?: boolean;
+  isGuestMode?: boolean;
 }
 
-const MenuItem = ({ icon, label, isActive, onPress, labelStyle }: MenuItemProps) => {
+const MenuItem = ({ 
+  icon, 
+  label, 
+  isActive, 
+  onPress, 
+  labelStyle,
+  isRestricted = false,
+  isGuestMode = false
+}: MenuItemProps) => {
+  const itemStyle = isRestricted && isGuestMode ? styles.restrictedMenuItem : styles.menuItem;
+  const activeStyle = isActive && !isRestricted ? styles.activeMenuItem : null;
+  
   return (
     <TouchableOpacity
-      style={[styles.menuItem, isActive && styles.activeMenuItem]}
+      style={[itemStyle, activeStyle]}
       onPress={onPress}
     >
       <View style={styles.menuItemLeft}>
-        {icon}
-        <Text style={[styles.menuItemLabel, isActive && styles.activeMenuItemLabel, labelStyle]}>
+        {isRestricted && isGuestMode ? (
+          <Lock size={20} color={colors.textLight} />
+        ) : (
+          icon
+        )}
+        <Text style={[
+          styles.menuItemLabel, 
+          isActive && styles.activeMenuItemLabel, 
+          isRestricted && isGuestMode && styles.restrictedMenuItemLabel,
+          labelStyle
+        ]}>
           {label}
         </Text>
       </View>
-      <ChevronRight size={16} color={isActive ? colors.primary : colors.gray} />
+      
+      {isRestricted && isGuestMode ? (
+        <Text style={styles.loginText}>Login</Text>
+      ) : (
+        <ChevronRight size={16} color={isActive ? colors.primary : colors.gray} />
+      )}
     </TouchableOpacity>
   );
 };
@@ -291,7 +365,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingTop: Platform.OS === 'ios' ? 44 : 24,
     backgroundColor: colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -358,5 +432,23 @@ const styles = StyleSheet.create({
   version: {
     fontSize: 12,
     color: colors.textLight,
+  },
+  restrictedMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.grayLight,
+    opacity: 0.6,
+  },
+  restrictedMenuItemLabel: {
+    color: colors.textLight,
+  },
+  loginText: {
+    fontSize: 12,
+    color: colors.primary,
+    fontWeight: '500',
   },
 });

@@ -185,12 +185,15 @@ export const scanForPrinters = async (): Promise<PrinterDevice[]> => {
           name.includes('star') ||
           name.includes('zebra') ||
           name.includes('citizen') ||
-          name.includes('bixolon');
+          name.includes('bixolon') ||
+          // Add your specific device name here (case insensitive)
+          name.includes('your_device_name');
 
-        if (isPrinterLike) {
-          console.log('Found potential printer:', device.name, device.id);
+        // Show all devices - comment out the filter to include any Bluetooth device
+        // if (isPrinterLike) {
+          console.log('Found device:', device.name, device.id);
           discoveredDevices.set(device.id, device);
-        }
+        // }
       }
     });
 
@@ -307,6 +310,35 @@ export const pairWithDevice = async (device: PrinterDevice): Promise<boolean> =>
   return await connectToPrinter(device);
 };
 
+export const testPrinterConnection = async (printer: PrinterDevice): Promise<boolean> => {
+  if (Platform.OS === 'web') {
+    return false;
+  }
+
+  try {
+    console.log('Testing connection to printer:', printer.name);
+    
+    // Check if device is already connected
+    const isConnected = await bleManager.isDeviceConnected(printer.id);
+    if (isConnected) {
+      console.log('Printer is already connected');
+      return true;
+    }
+    
+    // Try to connect
+    const connected = await connectToPrinter(printer);
+    if (connected) {
+      console.log('Successfully connected to printer');
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error testing printer connection:', error);
+    return false;
+  }
+};
+
 export const printBillToPrinter = async (bill: Bill, printer: PrinterDevice): Promise<boolean> => {
   if (Platform.OS === 'web') {
     return false;
@@ -314,6 +346,17 @@ export const printBillToPrinter = async (bill: Bill, printer: PrinterDevice): Pr
 
   try {
     console.log('Printing bill to printer:', printer.name);
+    
+    // Check if device is connected, if not, try to connect
+    const isConnected = await bleManager.isDeviceConnected(printer.id);
+    if (!isConnected) {
+      console.log('Printer not connected, attempting to connect...');
+      const connected = await connectToPrinter(printer);
+      if (!connected) {
+        console.error('Failed to connect to printer');
+        return false;
+      }
+    }
     
     // This is a basic implementation - you'll need to customize based on your printer's protocol
     // Most thermal printers use ESC/POS commands

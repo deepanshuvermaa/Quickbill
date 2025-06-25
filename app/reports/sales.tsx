@@ -20,9 +20,11 @@ import {
   TrendingUp, 
   BarChart, 
   Download,
-  Share2
+  Share2,
+  FileText,
+  Package
 } from 'lucide-react-native';
-import { exportSalesReportToPDF, shareSalesReport, SalesReportData } from '@/utils/pdf-reports';
+import { exportBillWiseReport, exportItemWiseReport } from '@/utils/report-generator';
 
 export default function SalesReportScreen() {
   const router = useRouter();
@@ -30,6 +32,7 @@ export default function SalesReportScreen() {
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week');
   const [isExporting, setIsExporting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [reportType, setReportType] = useState<'bill-wise' | 'item-wise'>('bill-wise');
   
   // Get current date
   const now = new Date();
@@ -145,34 +148,22 @@ export default function SalesReportScreen() {
     }
   };
 
-  // Prepare report data
-  const getReportData = (): SalesReportData => ({
-    period: getPeriodLabel(),
-    totalSales,
-    averageSale,
-    transactionCount: filteredBills.length,
-    bills: filteredBills,
-    topSellingItems,
-    salesByPaymentMethod,
-  });
-
-  // Handle PDF export
-  const handleExportPDF = async () => {
+  // Handle bill-wise report export
+  const handleBillWiseReport = async () => {
     setIsExporting(true);
     try {
-      const reportData = getReportData();
-      const success = await exportSalesReportToPDF(reportData);
+      const success = await exportBillWiseReport(filteredBills, getPeriodLabel());
       
       if (success) {
         Alert.alert(
           'Export Successful',
-          'Sales report has been exported as PDF and saved to your device.',
+          'Bill-wise report has been generated and is ready to print/share.',
           [{ text: 'OK' }]
         );
       } else {
         Alert.alert(
           'Export Failed',
-          'Unable to export the sales report. Please try again.',
+          'Unable to generate the bill-wise report. Please try again.',
           [{ text: 'OK' }]
         );
       }
@@ -180,7 +171,38 @@ export default function SalesReportScreen() {
       console.error('Export error:', error);
       Alert.alert(
         'Export Error',
-        'An error occurred while exporting the report.',
+        'An error occurred while generating the report.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  // Handle item-wise report export
+  const handleItemWiseReport = async () => {
+    setIsExporting(true);
+    try {
+      const success = await exportItemWiseReport(filteredBills, getPeriodLabel());
+      
+      if (success) {
+        Alert.alert(
+          'Export Successful',
+          'Item-wise report has been generated and is ready to print/share.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Export Failed',
+          'Unable to generate the item-wise report. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert(
+        'Export Error',
+        'An error occurred while generating the report.',
         [{ text: 'OK' }]
       );
     } finally {
@@ -188,29 +210,12 @@ export default function SalesReportScreen() {
     }
   };
 
-  // Handle share report
-  const handleShareReport = async () => {
-    setIsSharing(true);
-    try {
-      const reportData = getReportData();
-      const success = await shareSalesReport(reportData);
-      
-      if (!success) {
-        Alert.alert(
-          'Share Failed',
-          'Unable to share the sales report. Please try again.',
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('Share error:', error);
-      Alert.alert(
-        'Share Error',
-        'An error occurred while sharing the report.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsSharing(false);
+  // Handle report export based on selected type
+  const handleExportReport = async () => {
+    if (reportType === 'bill-wise') {
+      await handleBillWiseReport();
+    } else {
+      await handleItemWiseReport();
     }
   };
   
@@ -231,25 +236,13 @@ export default function SalesReportScreen() {
             <View style={styles.headerButtons}>
               <TouchableOpacity 
                 style={styles.headerButton}
-                onPress={handleExportPDF}
+                onPress={handleExportReport}
                 disabled={isExporting}
               >
                 {isExporting ? (
                   <ActivityIndicator size="small" color={colors.primary} />
                 ) : (
                   <Download size={20} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.headerButton}
-                onPress={handleShareReport}
-                disabled={isSharing}
-              >
-                {isSharing ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Share2 size={20} color={colors.primary} />
                 )}
               </TouchableOpacity>
             </View>
@@ -326,6 +319,47 @@ export default function SalesReportScreen() {
               Year
             </Text>
           </TouchableOpacity>
+        </View>
+        
+        <View style={styles.reportTypeSelector}>
+          <Text style={styles.reportTypeLabelText}>Report Type:</Text>
+          <View style={styles.reportTypeOptions}>
+            <TouchableOpacity
+              style={[
+                styles.reportTypeOption,
+                reportType === 'bill-wise' && styles.selectedReportType
+              ]}
+              onPress={() => setReportType('bill-wise')}
+            >
+              <FileText size={16} color={reportType === 'bill-wise' ? colors.white : colors.primary} />
+              <Text 
+                style={[
+                  styles.reportTypeText,
+                  reportType === 'bill-wise' && styles.selectedReportTypeText
+                ]}
+              >
+                Bill-wise
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.reportTypeOption,
+                reportType === 'item-wise' && styles.selectedReportType
+              ]}
+              onPress={() => setReportType('item-wise')}
+            >
+              <Package size={16} color={reportType === 'item-wise' ? colors.white : colors.primary} />
+              <Text 
+                style={[
+                  styles.reportTypeText,
+                  reportType === 'item-wise' && styles.selectedReportTypeText
+                ]}
+              >
+                Item-wise
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
         
         <View style={styles.summaryCards}>
@@ -469,6 +503,43 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   selectedPeriodText: {
+    color: colors.white,
+    fontWeight: '600',
+  },
+  reportTypeSelector: {
+    marginBottom: 16,
+  },
+  reportTypeLabelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  reportTypeOptions: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    padding: 4,
+  },
+  reportTypeOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  selectedReportType: {
+    backgroundColor: colors.primary,
+  },
+  reportTypeText: {
+    fontSize: 14,
+    color: colors.primary,
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  selectedReportTypeText: {
     color: colors.white,
     fontWeight: '600',
   },

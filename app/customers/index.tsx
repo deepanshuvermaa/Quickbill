@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
-    paddingBottom: 8,
+    paddingBottom: 6,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 60,
   },
   customerItem: {
     padding: 4,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   customerName: {
     fontSize: 18,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 8,
-    paddingTop: 12,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: colors.grayLight,
   },

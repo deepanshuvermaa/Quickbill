@@ -64,4 +64,22 @@ declare module 'lucide-react-native' {
   export const Wallet: Icon;
   export const Hash: Icon;
   export const Shield: Icon;
+  export const AlertTriangle: Icon;
+  export const Upload: Icon;
+  export const ChevronUp: Icon;
+  export const ShoppingBag: Icon;
+  export const Store: Icon;
+  export const Percent: Icon;
+  export const HelpCircle: Icon;
+  export const LogOut: Icon;
+  export const Lock: Icon;
+  export const EyeOff: Icon;
+  export const Building: Icon;
+  export const Save: Icon;
+  export const MapPin: Icon;
+  export const BarChart: Icon;
+  export const UserCog: Icon;
+  export const Minus: Icon;
+  export const FileX: Icon;
+  export const LogIn: Icon;
 }

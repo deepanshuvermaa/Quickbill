@@ -187,7 +187,7 @@ export default function BillDetailsScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen 
         options={{
-          title: `Bill #${bill.id.substring(0, 8)}`,
+          title: bill.invoiceNumber ? `Invoice #${bill.invoiceNumber}` : `Bill #${bill.id.substring(0, 8)}`,
           headerLeft: () => (
             <TouchableOpacity 
               style={styles.backButton}

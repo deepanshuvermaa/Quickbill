@@ -5,6 +5,7 @@ import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useBillsStore } from '@/store/billsStore';
 import { useItemsStore } from '@/store/itemsStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { BillCard } from '@/components/BillCard';
 import { EmptyState } from '@/components/EmptyState';
 import { PrinterSelectionModal } from '@/components/PrinterSelectionModal';
@@ -13,7 +14,8 @@ import { Receipt, Menu, Bluetooth } from 'lucide-react-native';
 import { 
   PrinterDevice, 
   printBillToPrinter, 
-  ensureBluetoothReady
+  ensureBluetoothReady,
+  testPrinterConnection
 } from '@/utils/bluetooth-print';
 import { useHamburgerMenu } from '../../_layout';
 
@@ -22,6 +24,7 @@ export default function HistoryScreen() {
   const { toggleMenu } = useHamburgerMenu();
   const { bills, deleteBill, getBillById } = useBillsStore();
   const { updateItemStock } = useItemsStore();
+  const { primaryPrinter, setPrimaryPrinter } = useSettingsStore();
   const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [selectedBill, setSelectedBill] = useState<string | null>(null);
   
@@ -55,9 +58,74 @@ export default function HistoryScreen() {
       return;
     }
     
-    // Show printer selection modal directly
-    setSelectedBill(billId);
-    setShowPrinterModal(true);
+    // Check if there's a primary printer set
+    if (primaryPrinter) {
+      // Test connection to primary printer
+      const connectionWorking = await testPrinterConnection(primaryPrinter);
+      
+      if (connectionWorking) {
+        // Print directly to primary printer
+        try {
+          const success = await printBillToPrinter(bill, primaryPrinter);
+          
+          if (success) {
+            Alert.alert("Success", `Bill sent to ${primaryPrinter.name} successfully`);
+          } else {
+            // Connection failed, show options
+            Alert.alert(
+              "Print Failed",
+              `Failed to print to ${primaryPrinter.name}. Would you like to select a different printer?`,
+              [
+                { text: "Cancel", style: "cancel" },
+                { 
+                  text: "Select Printer", 
+                  onPress: () => {
+                    setSelectedBill(billId);
+                    setShowPrinterModal(true);
+                  }
+                }
+              ]
+            );
+          }
+        } catch (error) {
+          console.error('Error printing to primary printer:', error);
+          Alert.alert(
+            "Print Error",
+            `Error printing to ${primaryPrinter.name}. Would you like to select a different printer?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Select Printer", 
+                onPress: () => {
+                  setSelectedBill(billId);
+                  setShowPrinterModal(true);
+                }
+              }
+            ]
+          );
+        }
+      } else {
+        // Primary printer not available, show options
+        Alert.alert(
+          "Printer Unavailable",
+          `Primary printer "${primaryPrinter.name}" is not available. Would you like to select a different printer?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            { 
+              text: "Select Printer", 
+              onPress: () => {
+                setSelectedBill(billId);
+                setShowPrinterModal(true);
+              }
+            }
+          ]
+        );
+      }
+    } else {
+      // No primary printer set, show printer selection modal
+      setSelectedBill(billId);
+      setShowPrinterModal(true);
+    }
   };
   
   const handlePrinterSelected = async (printer: PrinterDevice) => {
@@ -72,7 +140,17 @@ export default function HistoryScreen() {
       const success = await printBillToPrinter(bill, printer);
       
       if (success) {
-        Alert.alert("Success", "Bill sent to printer successfully");
+        // Set this printer as the primary printer for future use
+        setPrimaryPrinter({
+          id: printer.id,
+          name: printer.name,
+          address: printer.address
+        });
+        
+        Alert.alert(
+          "Success", 
+          `Bill sent to ${printer.name} successfully.\n\nThis printer has been set as your primary printer for future printing.`
+        );
       } else {
         Alert.alert("Error", "Failed to print bill. Please check printer connection.");
       }
@@ -113,7 +191,7 @@ export default function HistoryScreen() {
   };
   
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <Stack.Screen 
         options={{ 
           title: 'Bill History',
@@ -169,7 +247,7 @@ export default function HistoryScreen() {
         }}
         onPrinterSelected={handlePrinterSelected}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -177,12 +255,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 95 : 65, // Account for absolute positioned tab bar
+    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
+    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
+    paddingTop: 4,
+    paddingBottom: 12,
   },
   printerButton: {
     padding: 8,

@@ -21,17 +21,23 @@ import {
   Search,
   Download,
   Share2,
-  Filter
+  Filter,
+  Upload,
+  FileText
 } from 'lucide-react-native';
 import { Item } from '@/types';
+import { exportInventoryCSV, exportInventoryReport, downloadSampleCSV } from '@/utils/inventory-io';
+import { Alert, ActivityIndicator } from 'react-native';
 
 export default function InventoryReportScreen() {
   const router = useRouter();
-  const { items } = useItemsStore();
+  const { items, addItem } = useItemsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'stock' | 'price'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportType, setExportType] = useState<'csv' | 'report'>('report');
   
   // Get unique categories
   const categories = Array.from(new Set(items.map(item => item.category))).filter(Boolean);
@@ -71,6 +77,116 @@ export default function InventoryReportScreen() {
     if (stock === undefined || stock === 0) return 'out';
     if (stock < 10) return 'low';
     return 'ok';
+  };
+  
+  // Handle export functions
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const success = await exportInventoryCSV(items);
+      
+      if (success) {
+        Alert.alert(
+          'Export Successful',
+          'Inventory has been exported as CSV file.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Export Failed',
+          'Unable to export inventory. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert(
+        'Export Error',
+        'An error occurred while exporting inventory.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  const handleExportReport = async () => {
+    setIsExporting(true);
+    try {
+      const success = await exportInventoryReport(items);
+      
+      if (success) {
+        Alert.alert(
+          'Export Successful',
+          'Inventory report has been generated and is ready to print.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Export Failed',
+          'Unable to generate inventory report. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      Alert.alert(
+        'Export Error',
+        'An error occurred while generating the report.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+  
+  const handleExport = () => {
+    Alert.alert(
+      'Export Inventory',
+      'Choose export format:',
+      [
+        {
+          text: 'CSV Data',
+          onPress: handleExportCSV
+        },
+        {
+          text: 'Printable Report',
+          onPress: handleExportReport
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  // Handle download sample CSV
+  const handleDownloadSample = async () => {
+    try {
+      const success = await downloadSampleCSV();
+      
+      if (success) {
+        Alert.alert(
+          'Sample Downloaded',
+          'Sample CSV template has been downloaded/shared. Use this template to format your inventory data.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Download Failed',
+          'Unable to download sample template. Please try again.',
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('Download sample error:', error);
+      Alert.alert(
+        'Download Error',
+        'An error occurred while downloading the sample.',
+        [{ text: 'OK' }]
+      );
+    }
   };
   
   // Render item
@@ -121,22 +237,20 @@ export default function InventoryReportScreen() {
             <View style={styles.headerButtons}>
               <TouchableOpacity 
                 style={styles.headerButton}
-                onPress={() => {
-                  // In a real app, this would export the report
-                  alert('Export functionality would be implemented here');
-                }}
+                onPress={handleDownloadSample}
               >
-                <Download size={20} color={colors.primary} />
+                <FileText size={20} color={colors.success} />
               </TouchableOpacity>
-              
               <TouchableOpacity 
                 style={styles.headerButton}
-                onPress={() => {
-                  // In a real app, this would share the report
-                  alert('Share functionality would be implemented here');
-                }}
+                onPress={handleExport}
+                disabled={isExporting}
               >
-                <Share2 size={20} color={colors.primary} />
+                {isExporting ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Download size={20} color={colors.primary} />
+                )}
               </TouchableOpacity>
             </View>
           ),

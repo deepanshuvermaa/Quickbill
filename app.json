@@ -2,7 +2,7 @@
   "expo": {
     "name": "QuickBill - POS & Billing",
     "slug": "quickbill-pos",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A modern point-of-sale and billing app with inventory management, customer tracking, and Bluetooth printer support.",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,14 +10,14 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/splash.jpg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.quickbill.pos",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to thermal printers",
         "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to thermal printers"
@@ -36,8 +36,8 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
-      "package": "com.quickbill.pos",
-      "versionCode": 1
+      "package": "com.quickbill.pos.release",
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",

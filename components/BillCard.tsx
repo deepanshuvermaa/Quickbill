@@ -27,7 +27,9 @@ export const BillCard = ({ bill, onPress, onPrint, onShare, onDelete }: BillCard
       <TouchableOpacity onPress={onPress}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.billId}>Bill #{bill.id.substring(5, 13)}</Text>
+            <Text style={styles.billId}>
+              {bill.invoiceNumber ? `Invoice #${bill.invoiceNumber}` : `Bill #${bill.id.substring(5, 13)}`}
+            </Text>
             <Text style={styles.date}>{formattedDate}</Text>
           </View>
           

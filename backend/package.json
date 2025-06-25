@@ -4,7 +4,7 @@
   "description": "QuickBill Authentication & Subscription Backend",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server-with-migration.js",
     "dev": "nodemon server.js",
     "migrate": "node migrate.js"
   },

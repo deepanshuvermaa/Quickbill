@@ -2,11 +2,12 @@ import React, { useState, useCallback, createContext, useContext } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Menu } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
+import { AuthGuard } from '@/components/AuthGuard';
 
 // Create a context for the hamburger menu
 interface HamburgerMenuContextType {
@@ -46,16 +47,19 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <HamburgerMenuContext.Provider value={{ isMenuOpen, toggleMenu, closeMenu }}>
-        <SafeAreaView style={styles.container}>
-          <StatusBar style="auto" />
-          <Stack
+        <AuthGuard>
+          <SafeAreaView style={styles.container} edges={['top']}>
+            <StatusBar style="dark" backgroundColor={colors.white} translucent={false} />
+            <Stack
             screenOptions={{
               headerStyle: {
                 backgroundColor: colors.white,
+                height: Platform.OS === 'ios' ? 88 : 56, // Reduced header height
               },
               headerTitleStyle: {
                 fontWeight: '600',
                 fontSize: 18,
+                marginTop: Platform.OS === 'ios' ? -4 : 0, // Adjust title position
               },
               headerTintColor: colors.text,
               headerShadowVisible: false,
@@ -70,6 +74,30 @@ export default function RootLayout() {
             name="(tabs)"
             options={{
               headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="auth/login"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="auth/register"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="auth/forgot-password"
+            options={{
+              headerTitle: 'Reset Password',
+            }}
+          />
+          <Stack.Screen
+            name="auth/subscription"
+            options={{
+              headerTitle: 'Subscription Plans',
             }}
           />
           <Stack.Screen
@@ -226,6 +254,7 @@ export default function RootLayout() {
           </Stack>
           <HamburgerMenu isVisible={isMenuOpen} onClose={closeMenu} />
         </SafeAreaView>
+        </AuthGuard>
       </HamburgerMenuContext.Provider>
     </SafeAreaProvider>
   );

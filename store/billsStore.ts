@@ -5,6 +5,7 @@ import { Bill, PaymentMethod } from '@/types';
 import { useCartStore } from './cartStore';
 import { useSettingsStore } from './settingsStore';
 import { generateUniqueId } from '@/utils/helpers';
+import { generateInvoiceNumber } from '@/utils/invoice-numbering';
 
 interface BillsState {
   bills: Bill[];
@@ -56,17 +57,21 @@ export const useBillsStore = create<BillsState>()(
 );
 
 // Helper function to create a bill from the cart
-export const createBillFromCart = (): string => {
+export const createBillFromCart = async (): Promise<string> => {
   const cartStore = useCartStore.getState();
   const settingsStore = useSettingsStore.getState();
   const billsStore = useBillsStore.getState();
   
-  // Generate a unique ID for the bill
+  // Generate invoice number using new numbering system
+  const invoiceNumber = await generateInvoiceNumber();
+  
+  // Also generate a unique ID for internal reference (keeping both for compatibility)
   const billId = generateUniqueId('bill');
   
   // Create the bill object
   const bill: Bill = {
     id: billId,
+    invoiceNumber: invoiceNumber,
     customerName: cartStore.customerName,
     customerPhone: cartStore.customerPhone,
     items: cartStore.items.map(item => ({
