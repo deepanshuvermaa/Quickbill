@@ -68,10 +68,17 @@ export const createBillFromCart = async (): Promise<string> => {
   // Also generate a unique ID for internal reference (keeping both for compatibility)
   const billId = generateUniqueId('bill');
   
+  // Get tax configuration
+  const taxConfig = settingsStore.taxConfig;
+  const taxRate = taxConfig?.isDefault ? 
+    (taxConfig.igst || cartStore.tax) : 
+    cartStore.tax;
+  
   // Create the bill object
   const bill: Bill = {
     id: billId,
     invoiceNumber: invoiceNumber,
+    billNumber: invoiceNumber, // Use invoice number as bill number
     customerName: cartStore.customerName,
     customerPhone: cartStore.customerPhone,
     items: cartStore.items.map(item => ({
@@ -79,18 +86,21 @@ export const createBillFromCart = async (): Promise<string> => {
       total: item.price * item.quantity
     })),
     subtotal: cartStore.getSubtotal(),
-    tax: cartStore.getSubtotal() * (cartStore.tax / 100),
+    tax: cartStore.getSubtotal() * (taxRate / 100),
+    taxRate: taxRate,
     discount: cartStore.getSubtotal() * (cartStore.discount / 100),
     total: cartStore.getTotal(),
     paymentMethod: cartStore.paymentMethod as PaymentMethod,
     notes: cartStore.notes,
     createdAt: Date.now(),
+    isInterstate: false, // Default to intrastate, can be updated based on customer location
     // Add business info to the bill
     businessName: settingsStore.businessInfo.name,
     businessAddress: settingsStore.businessInfo.address,
     businessPhone: settingsStore.businessInfo.phone,
     businessEmail: settingsStore.businessInfo.email,
     businessTaxId: settingsStore.businessInfo.taxId,
+    taxNumber: taxConfig?.gstNumber || settingsStore.businessInfo.taxId,
   };
   
   // Add the bill to the store

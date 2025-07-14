@@ -61,7 +61,7 @@ export default function HistoryScreen() {
     // Check if there's a primary printer set
     if (primaryPrinter) {
       // Test connection to primary printer
-      const connectionWorking = await testPrinterConnection(primaryPrinter);
+      const connectionWorking = await testPrinterConnection();
       
       if (connectionWorking) {
         // Print directly to primary printer
@@ -255,13 +255,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
-    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 12,
+    paddingTop: 16,
+    paddingBottom: 120,
   },
   printerButton: {
     padding: 8,

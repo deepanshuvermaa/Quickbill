@@ -6,10 +6,8 @@ import {
   ScrollView, 
   TouchableOpacity, 
   TextInput,
-  Alert,
-  Platform
+  Alert
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -27,7 +25,6 @@ import {
   Info, 
   LogOut,
   ChevronRight,
-  ArrowLeft,
   Menu,
   Hash
 } from 'lucide-react-native';
@@ -181,11 +178,24 @@ export default function SettingsScreen() {
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Tax Settings</Text>
           
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/tax-settings')}
+          >
+            <View style={styles.settingItemLeft}>
+              <Percent size={20} color={colors.primary} style={styles.settingIcon} />
+              <Text style={styles.settingText}>GST Configuration</Text>
+            </View>
+            <ChevronRight size={20} color={colors.gray} />
+          </TouchableOpacity>
+          
+          <View style={styles.divider} />
+          
           <View style={styles.inputContainer}>
             <Percent size={20} color={colors.primary} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Default Tax Rate (%)"
+              placeholder="Quick Tax Rate (%)"
               value={defaultTaxRate.toString()}
               onChangeText={(text) => {
                 const value = parseFloat(text) || 0;
@@ -258,7 +268,10 @@ export default function SettingsScreen() {
           
           <TouchableOpacity 
             style={styles.settingItem}
-            onPress={() => router.push('/help')}
+            onPress={() => {
+              // TODO: Implement help screen
+              Alert.alert('Help', 'Help section coming soon!');
+            }}
           >
             <View style={styles.settingItemLeft}>
               <HelpCircle size={20} color={colors.primary} style={styles.settingIcon} />
@@ -297,8 +310,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
-    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   menuButton: {
     padding: 8,
@@ -306,8 +317,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: 32,
+    paddingTop: 16,
+    paddingBottom: 120,
   },
   section: {
     marginBottom: 8,
@@ -390,5 +401,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.danger,
     fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 12,
   },
 });

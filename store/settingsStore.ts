@@ -17,14 +17,25 @@ interface PrimaryPrinter {
   address: string;
 }
 
+interface TaxConfig {
+  gstNumber: string;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  isDefault: boolean;
+  includeGSTNumber: boolean;
+}
+
 interface SettingsState {
   businessInfo: BusinessInfo;
   defaultTaxRate: number;
   primaryPrinter: PrimaryPrinter | null;
+  taxConfig: TaxConfig | null;
   
   updateBusinessInfo: (info: Partial<BusinessInfo>) => void;
   setDefaultTaxRate: (rate: number) => void;
   setPrimaryPrinter: (printer: PrimaryPrinter | null) => void;
+  updateTaxConfig: (config: TaxConfig) => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -39,6 +50,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       defaultTaxRate: 0,
       primaryPrinter: null,
+      taxConfig: null,
       
       updateBusinessInfo: (info) => {
         set((state) => ({
@@ -52,6 +64,10 @@ export const useSettingsStore = create<SettingsState>()(
       
       setPrimaryPrinter: (printer) => {
         set({ primaryPrinter: printer });
+      },
+      
+      updateTaxConfig: (config) => {
+        set({ taxConfig: config });
       },
     }),
     {

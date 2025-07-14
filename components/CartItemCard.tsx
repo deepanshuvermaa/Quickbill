@@ -10,17 +10,36 @@ const isSmallScreen = width < 380;
 
 interface CartItemCardProps {
   item: CartItem;
-  onIncrement: () => void;
-  onDecrement: () => void;
-  onRemove: () => void;
+  onUpdateQuantity?: (quantity: number) => void;
+  onRemove?: () => void;
+  // Legacy props for backward compatibility
+  onIncrement?: () => void;
+  onDecrement?: () => void;
 }
 
 export const CartItemCard = ({ 
   item, 
+  onUpdateQuantity,
+  onRemove,
+  // Legacy props
   onIncrement, 
-  onDecrement, 
-  onRemove 
+  onDecrement
 }: CartItemCardProps) => {
+  const handleIncrement = () => {
+    if (onUpdateQuantity) {
+      onUpdateQuantity(item.quantity + 1);
+    } else if (onIncrement) {
+      onIncrement();
+    }
+  };
+  
+  const handleDecrement = () => {
+    if (onUpdateQuantity) {
+      onUpdateQuantity(item.quantity - 1);
+    } else if (onDecrement) {
+      onDecrement();
+    }
+  };
   return (
     <Card>
       <View style={styles.container}>
@@ -35,7 +54,7 @@ export const CartItemCard = ({
         <View style={styles.actions}>
           <View style={styles.quantityContainer}>
             <TouchableOpacity 
-              onPress={onDecrement} 
+              onPress={handleDecrement} 
               style={styles.quantityButton}
               disabled={item.quantity <= 1}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -49,7 +68,7 @@ export const CartItemCard = ({
             <Text style={styles.quantity}>{item.quantity}</Text>
             
             <TouchableOpacity 
-              onPress={onIncrement} 
+              onPress={handleIncrement} 
               style={styles.quantityButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -57,13 +76,15 @@ export const CartItemCard = ({
             </TouchableOpacity>
           </View>
           
-          <TouchableOpacity 
-            onPress={onRemove} 
-            style={styles.removeButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Trash2 size={18} color={colors.danger} />
-          </TouchableOpacity>
+          {onRemove && (
+            <TouchableOpacity 
+              onPress={onRemove} 
+              style={styles.removeButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Trash2 size={18} color={colors.danger} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </Card>

@@ -67,27 +67,19 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings/index"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <Settings size={20} color={color} />,
-          href: '/settings',
-        }}
-      />
-      <Tabs.Screen
-        name="items/add"
-        options={{
-          title: 'Add Item',
-          tabBarIcon: ({ color }) => <Plus size={20} color={color} />,
-          href: '/items/add',
-        }}
-      />
-      <Tabs.Screen
         name="items/index"
         options={{
           title: 'Inventory',
           tabBarIcon: ({ color }) => <Package size={20} color={color} />,
           href: '/items',
+        }}
+      />
+      <Tabs.Screen
+        name="settings/index"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <Settings size={20} color={color} />,
+          href: '/settings',
         }}
       />
       <Tabs.Screen

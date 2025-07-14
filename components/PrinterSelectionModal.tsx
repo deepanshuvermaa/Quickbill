@@ -234,7 +234,7 @@ export const PrinterSelectionModal = ({
       }
       
       console.log(`Connecting to ${selectedPrinter.name}...`);
-      const connected = await connectToPrinter(selectedPrinter);
+      const connected = await connectToPrinter(selectedPrinter.address);
       
       if (connected) {
         console.log(`Successfully connected to ${selectedPrinter.name}`);

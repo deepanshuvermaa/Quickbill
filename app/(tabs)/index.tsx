@@ -4,10 +4,8 @@ import {
   Text, 
   StyleSheet, 
   ScrollView, 
-  TouchableOpacity, 
-  Platform 
+  TouchableOpacity
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { StatCard } from '@/components/StatCard';
@@ -139,7 +137,7 @@ export default function DashboardScreen() {
         </View>
         
         <View style={styles.row}>
-          <Card style={[styles.card, styles.profitCard]}>
+          <Card style={{...styles.card, ...styles.profitCard}}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Profit/Loss</Text>
               {profit >= 0 ? (
@@ -166,7 +164,7 @@ export default function DashboardScreen() {
             </TouchableOpacity>
           </Card>
           
-          <Card style={[styles.card, styles.todaySalesCard]}>
+          <Card style={{...styles.card, ...styles.todaySalesCard}}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Today's Sales</Text>
               <Calendar size={20} color={colors.primary} />
@@ -272,8 +270,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
-    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   menuButton: {
     padding: 8,
@@ -281,8 +277,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 0,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    paddingTop: 16,
+    paddingBottom: 120,
   },
   statsContainer: {
     flexDirection: 'row',

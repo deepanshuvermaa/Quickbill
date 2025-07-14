@@ -1,9 +1,6 @@
-import { Platform, PermissionsAndroid } from 'react-native';
-import { BleManager, Device, State } from 'react-native-ble-plx';
+import { Platform } from 'react-native';
 import { Bill } from '@/types';
-
-// Initialize BLE Manager
-const bleManager = new BleManager();
+import { bluetoothPrinter, ThermalPrinter } from './bluetooth-thermal-printer';
 
 export interface PrinterDevice {
   id: string;
@@ -20,361 +17,204 @@ export const ensureBluetoothReady = async (): Promise<boolean> => {
     console.log('Bluetooth not supported on web');
     return false;
   }
+  
+  return await bluetoothPrinter.isBluetoothEnabled();
+};
 
+export const requestBluetoothPermission = async (): Promise<boolean> => {
+  return await bluetoothPrinter.requestPermissions();
+};
+
+// New overloaded function for direct scanning
+export async function scanForPrinters(): Promise<PrinterDevice[]>;
+export async function scanForPrinters(
+  onDeviceFound: (device: PrinterDevice) => void,
+  onError?: (error: Error) => void
+): Promise<{ stop: () => void }>;
+
+export async function scanForPrinters(
+  onDeviceFound?: (device: PrinterDevice) => void,
+  onError?: (error: Error) => void
+): Promise<PrinterDevice[] | { stop: () => void }> {
   try {
-    // Check if Bluetooth is enabled
-    const state = await bleManager.state();
-    console.log('Bluetooth state:', state);
+    const printers = await bluetoothPrinter.scanForPrinters();
     
-    if (state !== State.PoweredOn) {
-      console.log('Bluetooth is not powered on');
-      return false;
+    // Convert to PrinterDevice format
+    const devices: PrinterDevice[] = printers.map(printer => ({
+      id: printer.id,
+      name: printer.name,
+      address: printer.address,
+      paired: printer.bonded,
+      connected: printer.connected,
+      type: 'thermal' as const,
+      paperWidth: '58mm' as const,
+    }));
+    
+    if (onDeviceFound) {
+      // Callback mode
+      devices.forEach(device => onDeviceFound(device));
+      return { stop: () => {} };
+    } else {
+      // Direct mode
+      return devices;
     }
+  } catch (error) {
+    if (onError) {
+      onError(error as Error);
+    }
+    if (onDeviceFound) {
+      return { stop: () => {} };
+    } else {
+      return [];
+    }
+  }
+};
 
-    // Request permissions for Android
-    if (Platform.OS === 'android') {
-      const granted = await requestBluetoothPermissions();
-      if (!granted) {
-        console.log('Bluetooth permissions not granted');
+export const connectToPrinter = async (deviceId: string): Promise<boolean> => {
+  const printer: ThermalPrinter = {
+    id: deviceId,
+    name: '',
+    address: deviceId,
+    bonded: true,
+    connected: false,
+  };
+  
+  return await bluetoothPrinter.connectToPrinter(printer);
+};
+
+export const disconnectFromPrinter = async (): Promise<void> => {
+  await bluetoothPrinter.disconnect();
+};
+
+export const testPrinterConnection = async (): Promise<boolean> => {
+  try {
+    // Just check if printer is connected without printing
+    return bluetoothPrinter.isConnected();
+  } catch (error) {
+    return false;
+  }
+};
+
+export const printBillToPrinter = async (
+  bill: Bill,
+  printer: PrinterDevice,
+  settings?: any
+): Promise<boolean> => {
+  try {
+    // First connect to the printer if not already connected
+    if (!printer.connected) {
+      const connected = await connectToPrinter(printer.address);
+      if (!connected) {
         return false;
       }
     }
-
+    
+    // Print the bill
+    await bluetoothPrinter.printBill(bill);
     return true;
   } catch (error) {
-    console.error('Error checking Bluetooth state:', error);
+    console.error('Error printing bill:', error);
     return false;
   }
 };
 
-export const isBluetoothEnabled = async (): Promise<boolean> => {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-  
+export const printBillWithPrimaryPrinter = async (
+  bill: Bill,
+  settings?: any
+): Promise<{ success: boolean; message: string }> => {
   try {
-    const state = await bleManager.state();
-    return state === State.PoweredOn;
+    // Get primary printer from settings store
+    const { useSettingsStore } = require('@/store/settingsStore');
+    const primaryPrinter = useSettingsStore.getState().primaryPrinter;
+    
+    if (!primaryPrinter) {
+      return {
+        success: false,
+        message: 'No primary printer configured'
+      };
+    }
+    
+    // Convert to PrinterDevice format
+    const printerDevice: PrinterDevice = {
+      id: primaryPrinter.address,
+      name: primaryPrinter.name,
+      address: primaryPrinter.address,
+      paired: true,
+      connected: false,
+      type: 'thermal',
+      paperWidth: '58mm'
+    };
+    
+    // Try to print with the primary printer
+    const success = await printBillToPrinter(bill, printerDevice, settings);
+    
+    if (success) {
+      return {
+        success: true,
+        message: `Printed to ${primaryPrinter.name}`
+      };
+    } else {
+      return {
+        success: false,
+        message: `Failed to print to ${primaryPrinter.name}`
+      };
+    }
   } catch (error) {
-    console.error('Error checking Bluetooth state:', error);
-    return false;
+    console.error('Error printing with primary printer:', error);
+    return {
+      success: false,
+      message: 'Failed to access primary printer'
+    };
   }
 };
 
-export const requestBluetoothPermissions = async (): Promise<boolean> => {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-  
-  if (Platform.OS === 'android') {
-    try {
-      // Request location permission (required for BLE scanning)
-      const locationGranted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        {
-          title: 'Location Permission',
-          message: 'This app needs location permission to scan for Bluetooth devices.',
-          buttonNeutral: 'Ask Me Later',
-          buttonNegative: 'Cancel',
-          buttonPositive: 'OK',
-        }
-      );
-
-      if (locationGranted !== PermissionsAndroid.RESULTS.GRANTED) {
-        console.log('Location permission denied');
-        return false;
-      }
-
-      // For Android 12+ (API level 31+), request additional permissions
-      if (Platform.Version >= 31) {
-        const bluetoothScanGranted = await PermissionsAndroid.request(
-          'android.permission.BLUETOOTH_SCAN' as any,
-          {
-            title: 'Bluetooth Scan Permission',
-            message: 'This app needs permission to scan for Bluetooth devices.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          }
-        );
-
-        const bluetoothConnectGranted = await PermissionsAndroid.request(
-          'android.permission.BLUETOOTH_CONNECT' as any,
-          {
-            title: 'Bluetooth Connect Permission',
-            message: 'This app needs permission to connect to Bluetooth devices.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          }
-        );
-
-        return (
-          bluetoothScanGranted === PermissionsAndroid.RESULTS.GRANTED &&
-          bluetoothConnectGranted === PermissionsAndroid.RESULTS.GRANTED
-        );
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error requesting Bluetooth permissions:', error);
-      return false;
-    }
-  }
-  
-  // iOS permissions are handled automatically
+export const isLocationEnabled = async (): Promise<boolean> => {
+  // Location is required for Bluetooth scanning on Android
+  // This is a simplified check - you might want to implement proper location checking
   return true;
 };
 
-// Helper function to convert BLE device to PrinterDevice
-const convertBleDeviceToPrinter = (device: Device): PrinterDevice => {
-  const name = device.name || device.localName || 'Unknown Device';
-  
-  // Determine if it's likely a printer based on name
-  const isPrinter = /printer|pos|thermal|epson|star|zebra|citizen|bixolon/i.test(name);
-  
-  return {
-    id: device.id,
-    name: name,
-    address: device.id, // BLE uses UUID instead of MAC address
-    paired: false, // BLE doesn't have the concept of pairing like classic Bluetooth
-    connected: false,
-    type: isPrinter ? (name.toLowerCase().includes('thermal') ? 'thermal' : 'pos') : undefined,
-    paperWidth: isPrinter ? '80mm' : undefined, // Default assumption
-  };
-};
-
-export const scanForPrinters = async (): Promise<PrinterDevice[]> => {
-  if (Platform.OS === 'web') {
-    return [];
-  }
-
-  return new Promise((resolve, reject) => {
-    const discoveredDevices = new Map<string, Device>();
-    let scanTimeout: NodeJS.Timeout;
-    let isResolved = false;
-
-    const cleanup = () => {
-      if (scanTimeout) {
-        clearTimeout(scanTimeout);
-      }
-      bleManager.stopDeviceScan();
-    };
-
-    // Start scanning
-    console.log('Starting BLE scan for printers...');
-    bleManager.startDeviceScan(null, null, (error, device) => {
-      if (isResolved) return;
-
-      if (error) {
-        console.error('BLE scan error:', error);
-        cleanup();
-        isResolved = true;
-        reject(error);
-        return;
-      }
-
-      if (device && device.name) {
-        // Filter for devices that might be printers
-        const name = device.name.toLowerCase();
-        const isPrinterLike = 
-          name.includes('printer') ||
-          name.includes('pos') ||
-          name.includes('thermal') ||
-          name.includes('epson') ||
-          name.includes('star') ||
-          name.includes('zebra') ||
-          name.includes('citizen') ||
-          name.includes('bixolon') ||
-          // Add your specific device name here (case insensitive)
-          name.includes('your_device_name');
-
-        // Show all devices - comment out the filter to include any Bluetooth device
-        // if (isPrinterLike) {
-          console.log('Found device:', device.name, device.id);
-          discoveredDevices.set(device.id, device);
-        // }
-      }
-    });
-
-    // Stop scanning after 10 seconds
-    scanTimeout = setTimeout(() => {
-      if (isResolved) return;
-      
-      console.log('Stopping BLE scan, found', discoveredDevices.size, 'potential printers');
-      cleanup();
-      
-      const printers = Array.from(discoveredDevices.values()).map(convertBleDeviceToPrinter);
-      isResolved = true;
-      resolve(printers);
-    }, 10000);
-  });
-};
-
+// Add missing functions that the modal is trying to use
 export const scanForAllBluetoothDevices = async (): Promise<PrinterDevice[]> => {
-  if (Platform.OS === 'web') {
+  try {
+    // Use the same scan function but don't filter by printer type
+    const devices = await bluetoothPrinter.scanForPrinters();
+    
+    return devices.map(device => ({
+      id: device.id,
+      name: device.name || 'Unknown Device',
+      address: device.address,
+      paired: device.bonded,
+      connected: device.connected,
+      type: 'thermal' as const,
+      paperWidth: '58mm' as const,
+    }));
+  } catch (error) {
+    console.error('Error scanning for all devices:', error);
     return [];
-  }
-
-  return new Promise((resolve, reject) => {
-    const discoveredDevices = new Map<string, Device>();
-    let scanTimeout: NodeJS.Timeout;
-    let isResolved = false;
-
-    const cleanup = () => {
-      if (scanTimeout) {
-        clearTimeout(scanTimeout);
-      }
-      bleManager.stopDeviceScan();
-    };
-
-    // Start scanning for all BLE devices
-    console.log('Starting BLE scan for all devices...');
-    bleManager.startDeviceScan(null, null, (error, device) => {
-      if (isResolved) return;
-
-      if (error) {
-        console.error('BLE scan error:', error);
-        cleanup();
-        isResolved = true;
-        reject(error);
-        return;
-      }
-
-      if (device) {
-        // Include all devices with names
-        if (device.name || device.localName) {
-          console.log('Found device:', device.name || device.localName, device.id);
-          discoveredDevices.set(device.id, device);
-        }
-      }
-    });
-
-    // Stop scanning after 15 seconds (longer for all devices)
-    scanTimeout = setTimeout(() => {
-      if (isResolved) return;
-      
-      console.log('Stopping BLE scan, found', discoveredDevices.size, 'devices');
-      cleanup();
-      
-      const devices = Array.from(discoveredDevices.values()).map(convertBleDeviceToPrinter);
-      isResolved = true;
-      resolve(devices);
-    }, 15000);
-  });
-};
-
-export const connectToPrinter = async (printer: PrinterDevice): Promise<boolean> => {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-
-  try {
-    console.log('Connecting to printer:', printer.name);
-    
-    // Connect to the BLE device
-    const device = await bleManager.connectToDevice(printer.id);
-    console.log('Connected to device:', device.name);
-    
-    // Discover services and characteristics
-    await device.discoverAllServicesAndCharacteristics();
-    console.log('Discovered services for device:', device.name);
-    
-    return true;
-  } catch (error) {
-    console.error('Error connecting to printer:', error);
-    return false;
-  }
-};
-
-export const disconnectFromPrinter = async (printer: PrinterDevice): Promise<boolean> => {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-
-  try {
-    console.log('Disconnecting from printer:', printer.name);
-    await bleManager.cancelDeviceConnection(printer.id);
-    console.log('Disconnected from device:', printer.name);
-    return true;
-  } catch (error) {
-    console.error('Error disconnecting from printer:', error);
-    return false;
   }
 };
 
 export const pairWithDevice = async (device: PrinterDevice): Promise<boolean> => {
-  // BLE doesn't require traditional pairing like classic Bluetooth
-  // Connection is the equivalent of pairing in BLE
-  console.log('BLE pairing (connecting) with device:', device.name);
-  return await connectToPrinter(device);
-};
-
-export const testPrinterConnection = async (printer: PrinterDevice): Promise<boolean> => {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-
   try {
-    console.log('Testing connection to printer:', printer.name);
+    // For now, we'll just try to connect which will trigger pairing if needed
+    const printer: ThermalPrinter = {
+      id: device.id,
+      name: device.name,
+      address: device.address,
+      bonded: device.paired || false,
+      connected: false,
+    };
     
-    // Check if device is already connected
-    const isConnected = await bleManager.isDeviceConnected(printer.id);
-    if (isConnected) {
-      console.log('Printer is already connected');
-      return true;
-    }
-    
-    // Try to connect
-    const connected = await connectToPrinter(printer);
+    const connected = await bluetoothPrinter.connectToPrinter(printer);
     if (connected) {
-      console.log('Successfully connected to printer');
+      // Disconnect after successful pairing
+      await bluetoothPrinter.disconnect();
       return true;
     }
-    
     return false;
   } catch (error) {
-    console.error('Error testing printer connection:', error);
-    return false;
-  }
-};
-
-export const printBillToPrinter = async (bill: Bill, printer: PrinterDevice): Promise<boolean> => {
-  if (Platform.OS === 'web') {
-    return false;
-  }
-
-  try {
-    console.log('Printing bill to printer:', printer.name);
-    
-    // Check if device is connected, if not, try to connect
-    const isConnected = await bleManager.isDeviceConnected(printer.id);
-    if (!isConnected) {
-      console.log('Printer not connected, attempting to connect...');
-      const connected = await connectToPrinter(printer);
-      if (!connected) {
-        console.error('Failed to connect to printer');
-        return false;
-      }
-    }
-    
-    // This is a basic implementation - you'll need to customize based on your printer's protocol
-    // Most thermal printers use ESC/POS commands
-    
-    // For now, just simulate printing
-    console.log('Bill data:', {
-      id: bill.id,
-      customerName: bill.customerName,
-      total: bill.total,
-      items: bill.items.length
-    });
-    
-    // TODO: Implement actual printing commands for your specific printer
-    // This would involve sending ESC/POS commands to the printer's characteristic
-    
-    return true;
-  } catch (error) {
-    console.error('Error printing bill:', error);
+    console.error('Error pairing with device:', error);
     return false;
   }
 };

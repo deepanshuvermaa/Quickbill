@@ -7,17 +7,15 @@ import {
   TouchableOpacity, 
   Alert,
   TextInput,
-  ScrollView,
-  Platform
+  ScrollView
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useItemsStore } from '@/store/itemsStore';
 import { ItemCard } from '@/components/ItemCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/Button';
-import { Plus, Search, Package, Filter, ArrowLeft } from 'lucide-react-native';
+import { Plus, Search, Package, ArrowLeft } from 'lucide-react-native';
 
 export default function ItemsScreen() {
   const router = useRouter();
@@ -187,8 +185,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingBottom: Platform.OS === 'ios' ? 75 : 55, // Account for absolute positioned tab bar
-    paddingTop: Platform.OS === 'ios' ? 88 : 56, // Account for header height
   },
   backButton: {
     padding: 8,
@@ -200,8 +196,8 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -247,8 +243,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   listContent: {
-    padding: 16,
-    paddingBottom: 12, // Extra padding for scrolling
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 120,
   },
   addButtonContainer: {
     padding: 16,
