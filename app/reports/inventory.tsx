@@ -28,15 +28,22 @@ import {
 import { Item } from '@/types';
 import { exportInventoryCSV, exportInventoryReport, downloadSampleCSV } from '@/utils/inventory-io';
 import { Alert, ActivityIndicator } from 'react-native';
+import { printReportToBluetooth, formatInventoryReport } from '@/utils/print-reports';
+import { useSettingsStore } from '@/store/settingsStore';
+import { PrinterSelectionModal } from '@/components/PrinterSelectionModal';
+import { Printer } from 'lucide-react-native';
 
 export default function InventoryReportScreen() {
   const router = useRouter();
   const { items, addItem } = useItemsStore();
+  const { primaryPrinter, setPrimaryPrinter, businessInfo, paperSize } = useSettingsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'stock' | 'price'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [isExporting, setIsExporting] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [exportType, setExportType] = useState<'csv' | 'report'>('report');
   
   // Get unique categories
@@ -160,6 +167,75 @@ export default function InventoryReportScreen() {
       ]
     );
   };
+  
+  // Handle Bluetooth printing
+  const handleBluetoothPrint = async () => {
+    setIsPrinting(true);
+    
+    try {
+      // Calculate inventory stats
+      const totalValue = items.reduce((sum, item) => sum + (item.price * (item.stock || 0)), 0);
+      const lowStockItems = items.filter(item => 
+        item.trackStock && item.stock !== undefined && 
+        item.minStock !== undefined && item.stock <= item.minStock
+      );
+      const outOfStockItems = items.filter(item => 
+        item.trackStock && item.stock === 0
+      );
+      
+      // Category breakdown
+      const categoryBreakdown: Record<string, number> = {};
+      items.forEach(item => {
+        const category = item.category || 'Uncategorized';
+        const value = item.price * (item.stock || 0);
+        categoryBreakdown[category] = (categoryBreakdown[category] || 0) + value;
+      });
+      
+      // Prepare report data
+      const reportData = {
+        businessName: businessInfo?.name,
+        totalItems: items.length,
+        totalStock,
+        totalValue,
+        lowStockCount: lowStockItems.length,
+        outOfStockCount: outOfStockItems.length,
+        items: items,
+        lowStockItems: lowStockItems.map(item => ({
+          name: item.name,
+          currentStock: item.stock || 0,
+          minStock: item.minStock || 0
+        })),
+        categoryBreakdown
+      };
+      
+      const success = await printReportToBluetooth(
+        formatInventoryReport(reportData, paperSize || '2inch'),
+        primaryPrinter,
+        () => setShowPrinterModal(true),
+        paperSize || '2inch'
+      );
+      
+      if (!success && !showPrinterModal) {
+        Alert.alert('Print Failed', 'Unable to print the report. Please check your printer connection.');
+      }
+    } catch (error) {
+      console.error('Print error:', error);
+      Alert.alert('Print Error', 'An error occurred while printing the report.');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+  
+  const handlePrinterSelected = async (printer: any) => {
+    setShowPrinterModal(false);
+    setPrimaryPrinter({
+      id: printer.id,
+      name: printer.name,
+      address: printer.address
+    });
+    // Retry printing with the selected printer
+    await handleBluetoothPrint();
+  };
 
   // Handle download sample CSV
   const handleDownloadSample = async () => {
@@ -235,6 +311,19 @@ export default function InventoryReportScreen() {
           ),
           headerRight: () => (
             <View style={styles.headerButtons}>
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity 
+                  style={styles.headerButton}
+                  onPress={handleBluetoothPrint}
+                  disabled={isPrinting}
+                >
+                  {isPrinting ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Printer size={20} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
               <TouchableOpacity 
                 style={styles.headerButton}
                 onPress={handleDownloadSample}
@@ -471,6 +560,13 @@ export default function InventoryReportScreen() {
           </Text>
         </Card>
       </ScrollView>
+      
+      {/* Printer Selection Modal */}
+      <PrinterSelectionModal
+        visible={showPrinterModal}
+        onClose={() => setShowPrinterModal(false)}
+        onPrinterSelected={handlePrinterSelected}
+      />
     </SafeAreaView>
   );
 }

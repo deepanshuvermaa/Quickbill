@@ -41,6 +41,8 @@ import { Item, CartItem, PaymentMethod } from '@/types';
 import { printOrShareBill } from '@/utils/print';
 import { useBillsStore } from '@/store/billsStore';
 import { useHamburgerMenu } from '../../_layout';
+import { useCustomerStore } from '@/store/customerStore';
+import { CustomerSelectionModal } from '@/components/CustomerSelectionModal';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 380;
@@ -51,6 +53,7 @@ export default function BillingScreen() {
   const { items, initializeWithMockData, checkStockAvailability } = useItemsStore();
   const { bills, getBillById, deleteBill } = useBillsStore();
   const { primaryPrinter, setPrimaryPrinter, taxConfig, defaultTaxRate } = useSettingsStore();
+  const { updateCustomerStats, createCustomer, loadAllCustomers } = useCustomerStore();
   const { 
     items: cartItems, 
     customerName, 
@@ -80,13 +83,17 @@ export default function BillingScreen() {
   const [showCart, setShowCart] = useState(false);
   const [isGridView, setIsGridView] = useState(false);
   const [createdBillId, setCreatedBillId] = useState<string | null>(null);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   
   // Initialize with mock data if no items exist
   useEffect(() => {
     if (items.length === 0) {
       initializeWithMockData();
     }
-  }, [items.length, initializeWithMockData]);
+    // Initialize customers
+    loadAllCustomers();
+  }, [items.length, initializeWithMockData, loadAllCustomers]);
   
   // Initialize tax with default value when cart is empty
   useEffect(() => {
@@ -157,6 +164,16 @@ export default function BillingScreen() {
     
     updateItemQuantity(itemId, newQuantity);
   };
+
+  const handleSelectCustomer = (customerId: string | null, name: string, phone?: string) => {
+    setSelectedCustomerId(customerId);
+    setCustomerName(name);
+    if (phone) {
+      setCustomerPhone(phone);
+    } else {
+      setCustomerPhone('');
+    }
+  };
   
   const handleCreateBill = async () => {
     if (cartItems.length === 0) {
@@ -176,6 +193,27 @@ export default function BillingScreen() {
       const billId = await createBillFromCart();
       setCreatedBillId(billId);
       
+      // Handle customer - either update existing or create new
+      let finalCustomerId = selectedCustomerId;
+      
+      if (!selectedCustomerId && customerPhone.trim()) {
+        // Create new customer if phone is provided but no customer selected
+        const newCustomer = createCustomer({
+          name: customerName.trim(),
+          phone: customerPhone.trim(),
+          createdFrom: 'billing',
+        });
+        if (newCustomer) {
+          finalCustomerId = newCustomer.id;
+        }
+      }
+      
+      // Update customer stats if we have a customer ID
+      if (finalCustomerId) {
+        const total = getTotal();
+        updateCustomerStats(finalCustomerId, total);
+      }
+      
       // Show success message
       Alert.alert(
         "Bill Created", 
@@ -187,6 +225,7 @@ export default function BillingScreen() {
             onPress: () => {
               clearCart();
               setShowCart(false);
+              setSelectedCustomerId(null);
             }
           },
           { 
@@ -202,6 +241,7 @@ export default function BillingScreen() {
               }
               clearCart();
               setShowCart(false);
+              setSelectedCustomerId(null);
             }
           }
         ]
@@ -426,6 +466,9 @@ export default function BillingScreen() {
         isCreatingBill={isCreatingBill}
         getSubtotal={getSubtotal}
         getTotal={getTotal}
+        onSelectCustomer={handleSelectCustomer}
+        onOpenCustomerModal={() => setShowCustomerModal(true)}
+        selectedCustomerId={selectedCustomerId}
       />
       
       {/* Printer Selection Modal */}
@@ -433,6 +476,14 @@ export default function BillingScreen() {
         visible={showPrinterModal}
         onClose={() => setShowPrinterModal(false)}
         onPrinterSelected={handlePrinterSelected}
+      />
+      
+      {/* Customer Selection Modal */}
+      <CustomerSelectionModal
+        visible={showCustomerModal}
+        onClose={() => setShowCustomerModal(false)}
+        onSelectCustomer={handleSelectCustomer}
+        selectedCustomerId={selectedCustomerId}
       />
     </View>
   );

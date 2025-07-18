@@ -1,4 +1,4 @@
-import { Platform, PermissionsAndroid, Alert } from 'react-native';
+import { Platform, PermissionsAndroid } from 'react-native';
 import RNBluetoothClassic, { BluetoothDevice } from 'react-native-bluetooth-classic';
 import { Bill } from '@/types';
 
@@ -207,144 +207,16 @@ export class BluetoothThermalPrinter {
     try {
       // Get settings from store
       const { useSettingsStore } = require('@/store/settingsStore');
-      const { taxConfig, businessInfo } = useSettingsStore.getState();
+      const { businessInfo, paperSize } = useSettingsStore.getState();
       
-      // Initialize printer
-      await this.write(Commands.INIT);
-
-      // Print header - improved styling
-      await this.write(Commands.ALIGN_CENTER);
-      await this.write(Commands.FONT_SIZE_DOUBLE_HEIGHT);
-      await this.write(Commands.BOLD_ON);
-      await this.write(`${bill.businessName || businessInfo?.name || 'QuickBill POS'}\n`);
-      await this.write(Commands.BOLD_OFF);
-      await this.write(Commands.FONT_SIZE_NORMAL);
+      // Use the generateBillText function with the paper size
+      const { generateBillText } = require('./print');
+      const billText = generateBillText(bill, paperSize || '2inch');
       
-      // Business details
-      if (bill.businessAddress) {
-        await this.write(`${bill.businessAddress}\n`);
-      }
-      if (bill.businessPhone) {
-        await this.write(`Tel: ${bill.businessPhone}\n`);
-      }
-      // Add GST number if configured
-      if (taxConfig?.includeGSTNumber && taxConfig?.gstNumber) {
-        await this.write(`GST: ${taxConfig.gstNumber}\n`);
-      }
-
-      // Separator
-      await this.write('--------------------------------\n');
+      // Print the formatted text
+      await this.printText(billText);
       
-      // Bill info with proper alignment
-      await this.write(Commands.ALIGN_LEFT);
-      
-      // Format date and time properly
-      const date = new Date(bill.createdAt);
-      const dateStr = date.toLocaleDateString('en-IN', { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric' 
-      });
-      const timeStr = date.toLocaleTimeString('en-IN', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-      
-      // Bill number with proper formatting
-      const billNumber = bill.billNumber || `#${String(bill.id).padStart(6, '0')}`;
-      await this.write(`Bill No: ${billNumber}\n`);
-      await this.write(`Date: ${dateStr}  Time: ${timeStr}\n`);
-      
-      if (bill.customerName) {
-        await this.write(`Customer: ${bill.customerName}\n`);
-      }
-      if (bill.customerPhone) {
-        await this.write(`Phone: ${bill.customerPhone}\n`);
-      }
-
-      // Items header
-      await this.write('--------------------------------\n');
-      await this.write('Item            Qty   Price  Amt\n');
-      await this.write('--------------------------------\n');
-
-      // Print items
-      for (const item of bill.items) {
-        const itemName = item.name.substring(0, 15).padEnd(15);
-        const qty = item.quantity.toString().padStart(3);
-        const price = item.price.toFixed(0).padStart(6);
-        const amount = (item.quantity * item.price).toFixed(0).padStart(5);
-        
-        await this.write(`${itemName} ${qty} ${price} ${amount}\n`);
-      }
-
-      // Totals
-      await this.write('--------------------------------\n');
-      
-      // Subtotal
-      const subtotalText = 'Subtotal:'.padEnd(26);
-      const subtotalValue = bill.subtotal.toFixed(2).padStart(6);
-      await this.write(`${subtotalText}${subtotalValue}\n`);
-      
-      // Tax with GST details
-      if (bill.tax > 0) {
-        if (taxConfig && bill.taxRate && bill.taxRate > 0) {
-          // Check if IGST or CGST+SGST
-          if (bill.isInterstate) {
-            const taxText = `IGST (${bill.taxRate}%):`.padEnd(26);
-            const taxValue = bill.tax.toFixed(2).padStart(6);
-            await this.write(`${taxText}${taxValue}\n`);
-          } else {
-            const halfTax = bill.tax / 2;
-            const halfRate = bill.taxRate / 2;
-            
-            const cgstText = `CGST (${halfRate}%):`.padEnd(26);
-            const cgstValue = halfTax.toFixed(2).padStart(6);
-            await this.write(`${cgstText}${cgstValue}\n`);
-            
-            const sgstText = `SGST (${halfRate}%):`.padEnd(26);
-            const sgstValue = halfTax.toFixed(2).padStart(6);
-            await this.write(`${sgstText}${sgstValue}\n`);
-          }
-        } else {
-          // Fallback to simple tax display
-          const taxRate = bill.taxRate || 0;
-          const taxText = `Tax (${taxRate}%):`.padEnd(26);
-          const taxValue = bill.tax.toFixed(2).padStart(6);
-          await this.write(`${taxText}${taxValue}\n`);
-        }
-      }
-      
-      // Discount
-      if (bill.discount > 0) {
-        const discountText = 'Discount:'.padEnd(26);
-        const discountValue = `-${bill.discount.toFixed(2)}`.padStart(6);
-        await this.write(`${discountText}${discountValue}\n`);
-      }
-
-      await this.write('--------------------------------\n');
-      
-      // Total with better alignment
-      await this.write(Commands.BOLD_ON);
-      await this.write(Commands.FONT_SIZE_DOUBLE_HEIGHT);
-      const totalText = 'TOTAL:';
-      const totalValue = `₹${bill.total.toFixed(2)}`;
-      const totalLine = totalText.padEnd(24 - totalValue.length) + totalValue;
-      await this.write(`${totalLine}\n`);
-      await this.write(Commands.FONT_SIZE_NORMAL);
-      await this.write(Commands.BOLD_OFF);
-
-      // Payment method
-      await this.write(`Payment: ${bill.paymentMethod || 'Cash'}\n`);
-      
-      // Footer
-      await this.write('--------------------------------\n');
-      await this.write(Commands.ALIGN_CENTER);
-      await this.write('Thank you for your business!\n');
-      await this.write('Powered by QuickBill POS\n');
-
-      // Feed and cut
-      await this.write('\n\n\n\n');
-      await this.write(Commands.CUT_PAPER);
+      return;
 
     } catch (error) {
       console.error('Print error:', error);
@@ -372,6 +244,24 @@ export class BluetoothThermalPrinter {
       await this.write(Commands.CUT_PAPER);
     } catch (error) {
       console.error('Test print error:', error);
+      throw error;
+    }
+  }
+
+  async printText(text: string): Promise<void> {
+    if (!this.currentDevice) {
+      throw new Error('No printer connected');
+    }
+
+    try {
+      await this.write(Commands.INIT);
+      await this.write(Commands.ALIGN_LEFT);
+      await this.write(Commands.FONT_SIZE_NORMAL);
+      await this.write(text);
+      await this.write('\n\n\n\n');
+      await this.write(Commands.CUT_PAPER);
+    } catch (error) {
+      console.error('Print text error:', error);
       throw error;
     }
   }

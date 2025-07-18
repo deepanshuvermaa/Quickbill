@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Bill, PaymentMethod } from '@/types';
 import { useCartStore } from './cartStore';
 import { useSettingsStore } from './settingsStore';
+import { useItemsStore } from './itemsStore';
 import { generateUniqueId } from '@/utils/helpers';
 import { generateInvoiceNumber } from '@/utils/invoice-numbering';
 
@@ -61,6 +62,7 @@ export const createBillFromCart = async (): Promise<string> => {
   const cartStore = useCartStore.getState();
   const settingsStore = useSettingsStore.getState();
   const billsStore = useBillsStore.getState();
+  const itemsStore = useItemsStore.getState();
   
   // Generate invoice number using new numbering system
   const invoiceNumber = await generateInvoiceNumber();
@@ -79,6 +81,7 @@ export const createBillFromCart = async (): Promise<string> => {
     id: billId,
     invoiceNumber: invoiceNumber,
     billNumber: invoiceNumber, // Use invoice number as bill number
+    customerId: cartStore.customerId,
     customerName: cartStore.customerName,
     customerPhone: cartStore.customerPhone,
     items: cartStore.items.map(item => ({
@@ -105,6 +108,11 @@ export const createBillFromCart = async (): Promise<string> => {
   
   // Add the bill to the store
   billsStore.addBill(bill);
+  
+  // Update inventory stock for each item in the bill
+  cartStore.items.forEach(item => {
+    itemsStore.updateItemStock(item.id, -item.quantity);
+  });
   
   // Return the bill ID
   return billId;

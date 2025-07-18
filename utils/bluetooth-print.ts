@@ -218,3 +218,26 @@ export const pairWithDevice = async (device: PrinterDevice): Promise<boolean> =>
     return false;
   }
 };
+
+export const printTextToPrinter = async (
+  text: string,
+  printer: PrinterDevice,
+  settings?: any
+): Promise<boolean> => {
+  try {
+    // First connect to the printer if not already connected
+    if (!printer.connected) {
+      const connected = await connectToPrinter(printer.address);
+      if (!connected) {
+        return false;
+      }
+    }
+    
+    // Print the text directly
+    await bluetoothPrinter.printText(text);
+    return true;
+  } catch (error) {
+    console.error('Error printing text:', error);
+    return false;
+  }
+};

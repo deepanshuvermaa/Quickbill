@@ -167,6 +167,8 @@ export const printOrShareBill = async (bill: Bill) => {
 export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'): string => {
   // Format-specific settings
   const lineWidth = format === '2inch' ? 32 : 48;
+  const doubleLine = '='.repeat(lineWidth);
+  const singleLine = '-'.repeat(lineWidth);
   const divider = '-'.repeat(lineWidth);
   
   // Business header
@@ -189,7 +191,7 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
   // Truncate text with ellipsis if too long
   const truncate = (text: string, maxLength: number): string => {
     if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + '...';
+    return text.substring(0, maxLength);
   };
   
   // Format date and time properly
@@ -202,17 +204,14 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
     timeZone: 'Asia/Kolkata'
   });
   
-  // Build header
+  // Build header with improved formatting
   let output = '';
-  output += centerText(businessName, lineWidth) + '\n';
+  output += doubleLine + '\n';
+  output += centerText(businessName.toUpperCase(), lineWidth) + '\n';
   output += centerText(businessAddress, lineWidth) + '\n';
   
   if (bill.businessPhone) {
-    output += centerText(`Phone: ${bill.businessPhone}`, lineWidth) + '\n';
-  }
-  
-  if (bill.businessEmail) {
-    output += centerText(bill.businessEmail, lineWidth) + '\n';
+    output += centerText(`Tel: ${bill.businessPhone}`, lineWidth) + '\n';
   }
   
   // Add GST/Tax ID if available
@@ -220,96 +219,106 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
     output += centerText(`GST: ${bill.businessTaxId}`, lineWidth) + '\n';
   }
   
+  output += doubleLine + '\n\n';
+  
+  // Bill info and customer details in better format
+  const billNo = bill.invoiceNumber || bill.id.substring(0, 8);
+  if (format === '2inch') {
+    output += `Bill: ${billNo}`.padEnd(17) + `Date: ${dateStr}\n`;
+    output += ''.padEnd(17) + `Time: ${timeStr}\n`;
+  } else {
+    // 3-inch format - better spacing
+    output += `Bill No: ${billNo}`.padEnd(30) + `Date: ${dateStr}\n`;
+    output += ''.padEnd(30) + `Time: ${timeStr}\n`;
+  }
   output += '\n';
-  output += centerText('TAX INVOICE', lineWidth) + '\n';
-  output += divider + '\n';
   
-  // Date, time and invoice number on separate lines for clarity
-  output += 'Date: ' + dateStr + '\n';
-  output += 'Time: ' + timeStr + '\n';
-  output += 'Invoice: ' + (bill.invoiceNumber ? bill.invoiceNumber.toUpperCase() : bill.id.substring(0, 8).toUpperCase()) + '\n';
-  
-  output += divider + '\n';
-  
-  // Customer info - centered
-  output += centerText('Customer Details', lineWidth) + '\n';
-  output += centerText(bill.customerName, lineWidth) + '\n';
+  // Customer info abbreviated
+  output += `Cust: ${bill.customerName}\n`;
   if (bill.customerPhone) {
-    output += centerText(bill.customerPhone, lineWidth) + '\n';
+    output += `Ph: ${bill.customerPhone}\n`;
   }
   
-  output += divider + '\n';
+  output += '\n' + singleLine + '\n';
   
-  // Item header - simplified for better alignment
+  // Item header with better formatting
   if (format === '2inch') {
     // For 2-inch receipt (32 chars)
-    output += 'Item'.padEnd(16) + 'Qty'.padEnd(4) + 'Price'.padEnd(6) + 'Total'.padEnd(6) + '\n';
+    output += 'ITEM'.padEnd(14) + 'QTY'.padEnd(5) + 'RATE'.padEnd(6) + 'AMT'.padEnd(7) + '\n';
   } else {
     // For 3-inch receipt (48 chars)
-    output += 'Item'.padEnd(26) + 'Qty'.padEnd(6) + 'Price'.padEnd(8) + 'Total'.padEnd(8) + '\n';
+    output += 'ITEM DESCRIPTION'.padEnd(24) + 'QTY'.padEnd(8) + 'RATE'.padEnd(8) + 'AMOUNT'.padEnd(8) + '\n';
   }
   
-  output += divider + '\n';
+  output += singleLine + '\n';
   
-  // Items - without Rs. prefix for cleaner look
+  // Items without rupee symbol
   for (const item of bill.items) {
+    // Simplify item name - remove units/brackets
+    let itemName = item.name;
+    itemName = itemName.replace(/\s*\([^)]*\)\s*/g, ''); // Remove content in brackets
+    
     if (format === '2inch') {
-      const name = truncate(item.name, 15);
-      const qty = item.quantity.toString();
-      const price = item.price.toFixed(0);
-      const total = (item.price * item.quantity).toFixed(0);
+      const name = truncate(itemName, 13).padEnd(14);
+      const qty = item.quantity.toString().padStart(5);
+      const price = item.price.toFixed(2).padStart(6);
+      const total = (item.price * item.quantity).toFixed(2).padStart(7);
       
-      output += name.padEnd(16) + 
-                qty.padEnd(4) + 
-                price.padEnd(6) + 
-                total.padEnd(6) + '\n';
+      output += name + qty + price + total + '\n';
     } else {
-      const name = truncate(item.name, 25);
-      const qty = item.quantity.toString();
-      const price = item.price.toFixed(0);
-      const total = (item.price * item.quantity).toFixed(0);
+      // 3-inch format - more space for item names
+      const name = truncate(itemName, 23).padEnd(24);
+      const qty = item.quantity.toString().padStart(8);
+      const price = item.price.toFixed(2).padStart(8);
+      const total = (item.price * item.quantity).toFixed(2).padStart(8);
       
-      output += name.padEnd(26) + 
-                qty.padEnd(6) + 
-                price.padEnd(8) + 
-                total.padEnd(8) + '\n';
+      output += name + qty + price + total + '\n';
     }
   }
   
-  output += divider + '\n';
+  output += singleLine + '\n';
   
-  // Totals section - cleaner formatting
+  // Calculate tax components if GST is configured
+  const taxRate = bill.taxRate || 0;
+  const cgstRate = taxRate / 2;
+  const sgstRate = taxRate / 2;
+  const cgstAmount = (bill.subtotal * cgstRate / 100);
+  const sgstAmount = (bill.subtotal * sgstRate / 100);
+  
+  // Totals section without rupee symbol
   if (format === '2inch') {
-    output += 'Sub Total:'.padEnd(20) + bill.subtotal.toFixed(2).padStart(12) + '\n';
+    output += 'Subtotal:'.padEnd(25) + bill.subtotal.toFixed(2).padStart(7) + '\n';
+    
+    if (taxRate > 0) {
+      output += `CGST(${cgstRate}%):`.padEnd(25) + cgstAmount.toFixed(2).padStart(7) + '\n';
+      output += `SGST(${sgstRate}%):`.padEnd(25) + sgstAmount.toFixed(2).padStart(7) + '\n';
+    }
     
     if (bill.discount > 0) {
-      output += 'Discount:'.padEnd(20) + bill.discount.toFixed(2).padStart(12) + '\n';
+      output += 'Discount:'.padEnd(25) + bill.discount.toFixed(2).padStart(7) + '\n';
     }
     
-    if (bill.tax > 0) {
-      const taxPercent = ((bill.tax / bill.subtotal) * 100).toFixed(0);
-      output += `GST (${taxPercent}%):`.padEnd(20) + bill.tax.toFixed(2).padStart(12) + '\n';
-    }
-    
-    output += divider + '\n';
-    output += 'TOTAL:'.padEnd(20) + bill.total.toFixed(2).padStart(12) + '\n';
+    output += ''.padEnd(24) + '--------\n';
+    output += 'TOTAL:'.padEnd(25) + bill.total.toFixed(2).padStart(7) + '\n';
   } else {
-    output += 'Sub Total:'.padEnd(32) + bill.subtotal.toFixed(2).padStart(16) + '\n';
+    // 3-inch format - more spacing
+    output += '\n';
+    output += 'Subtotal:'.padEnd(40) + bill.subtotal.toFixed(2).padStart(8) + '\n';
+    
+    if (taxRate > 0) {
+      output += `CGST (${cgstRate}%):`.padEnd(40) + cgstAmount.toFixed(2).padStart(8) + '\n';
+      output += `SGST (${sgstRate}%):`.padEnd(40) + sgstAmount.toFixed(2).padStart(8) + '\n';
+    }
     
     if (bill.discount > 0) {
-      output += 'Discount:'.padEnd(32) + bill.discount.toFixed(2).padStart(16) + '\n';
+      output += 'Discount:'.padEnd(40) + bill.discount.toFixed(2).padStart(8) + '\n';
     }
     
-    if (bill.tax > 0) {
-      const taxPercent = ((bill.tax / bill.subtotal) * 100).toFixed(0);
-      output += `GST (${taxPercent}%):`.padEnd(32) + bill.tax.toFixed(2).padStart(16) + '\n';
-    }
-    
-    output += divider + '\n';
-    output += 'TOTAL:'.padEnd(32) + bill.total.toFixed(2).padStart(16) + '\n';
+    output += ''.padEnd(39) + '---------\n';
+    output += 'TOTAL:'.padEnd(40) + bill.total.toFixed(2).padStart(8) + '\n';
   }
   
-  output += divider + '\n';
+  output += '\n';
   
   // Payment method
   const formattedPaymentMethod = bill.paymentMethod
@@ -317,20 +326,21 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
   
-  output += 'Payment: ' + formattedPaymentMethod + '\n';
+  output += `Payment: ${formattedPaymentMethod.toUpperCase()}\n`;
   
   // Notes
   if (bill.notes) {
-    output += divider + '\n';
+    output += '\n' + singleLine + '\n';
     output += centerText('Notes', lineWidth) + '\n';
     output += bill.notes + '\n';
   }
   
-  output += divider + '\n';
+  output += '\n' + doubleLine + '\n';
   
   // Footer
-  output += centerText('Thank You!', lineWidth) + '\n';
-  output += centerText('Visit Again', lineWidth) + '\n';
+  output += centerText('Thank you for shopping!', lineWidth) + '\n';
+  output += centerText('Powered by QuickBill', lineWidth) + '\n';
+  output += doubleLine + '\n';
   
   return output;
 };

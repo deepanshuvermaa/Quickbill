@@ -6,7 +6,8 @@ import {
   ScrollView, 
   TouchableOpacity, 
   ActivityIndicator,
-  Platform
+  Platform,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -55,6 +56,7 @@ export default function ProfitLossReportScreen() {
   const { expenses } = useExpensesStore();
   
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
   const [timeFrame, setTimeFrame] = useState<'all' | 'month' | 'week' | 'today'>('month');
   const [showSales, setShowSales] = useState(true);
   const [showExpenses, setShowExpenses] = useState(true);
@@ -118,10 +120,27 @@ export default function ProfitLossReportScreen() {
     return () => clearTimeout(timer);
   }, []);
   
+  const getPeriodLabel = () => {
+    switch (timeFrame) {
+      case 'today':
+        return 'Today';
+      case 'week':
+        return 'This Week';
+      case 'month':
+        return 'This Month';
+      case 'all':
+        return 'All Time';
+      default:
+        return 'This Month';
+    }
+  };
+  
   const handleExport = async () => {
+    setIsExporting(true);
     try {
       const { exportProfitLossReport } = await import('../../utils/report-generator');
-      const periodLabel = timeFrame === 'all' ? 'All Time' : timeFrame.charAt(0).toUpperCase() + timeFrame.slice(1);
+      const periodLabel = getPeriodLabel();
+      
       const success = await exportProfitLossReport(
         totalSales,
         totalExpenses,
@@ -130,12 +149,28 @@ export default function ProfitLossReportScreen() {
         periodLabel
       );
       
-      if (!success) {
-        console.log('Export cancelled or failed');
+      if (success) {
+        Alert.alert(
+          'Export Successful',
+          'Profit & Loss report has been generated and is ready to print/share.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert(
+          'Export Failed',
+          'Unable to generate the report. Please try again.',
+          [{ text: 'OK' }]
+        );
       }
     } catch (error) {
-      console.error('Error exporting report:', error);
-      alert('Failed to export report. Please try again.');
+      console.error('Export error:', error);
+      Alert.alert(
+        'Export Error',
+        'An error occurred while generating the report.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsExporting(false);
     }
   };
   
@@ -173,8 +208,13 @@ export default function ProfitLossReportScreen() {
         <TouchableOpacity 
           style={styles.exportButton}
           onPress={handleExport}
+          disabled={isExporting}
         >
-          <Download size={20} color={colors.primary} />
+          {isExporting ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Download size={20} color={colors.primary} />
+          )}
         </TouchableOpacity>
       </View>
       
@@ -324,7 +364,7 @@ export default function ProfitLossReportScreen() {
                   <View key={bill.id} style={styles.detailItem}>
                     <View style={styles.detailItemLeft}>
                       <Text style={styles.detailItemTitle}>
-                        Bill #{bill.id.substring(0, 8)}
+                        Bill #{bill.invoiceNumber || bill.billNumber || bill.id.substring(0, 8)}
                       </Text>
                       <View style={styles.detailItemInfo}>
                         <Calendar size={12} color={colors.textLight} />

@@ -3,6 +3,7 @@ import { CartItem, Item, PaymentMethod } from '@/types';
 
 interface CartState {
   items: CartItem[];
+  customerId: string | null;
   customerName: string;
   customerPhone: string;
   notes: string;
@@ -16,8 +17,10 @@ interface CartState {
   updateItemQuantity: (itemId: string, quantity: number) => void;
   removeItem: (itemId: string) => void;
   clearCart: () => void;
+  setCustomerId: (id: string | null) => void;
   setCustomerName: (name: string) => void;
   setCustomerPhone: (phone: string) => void;
+  setCustomerDetails: (id: string | null, name: string, phone: string) => void;
   setNotes: (notes: string) => void;
   setDiscount: (discount: number) => void;
   setTax: (tax: number) => void;
@@ -31,6 +34,7 @@ interface CartState {
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
+  customerId: null,
   customerName: "",
   customerPhone: "",
   notes: "",
@@ -96,6 +100,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   clearCart: () => {
     set({
       items: [],
+      customerId: null,
       customerName: "",
       customerPhone: "",
       notes: "",
@@ -106,8 +111,14 @@ export const useCartStore = create<CartState>((set, get) => ({
     });
   },
   
+  setCustomerId: (id) => set({ customerId: id }),
   setCustomerName: (name) => set({ customerName: name }),
   setCustomerPhone: (phone) => set({ customerPhone: phone }),
+  setCustomerDetails: (id, name, phone) => set({ 
+    customerId: id, 
+    customerName: name, 
+    customerPhone: phone 
+  }),
   setNotes: (notes) => set({ notes }),
   setDiscount: (discount) => set({ discount }),
   setTax: (tax) => set({ tax }),

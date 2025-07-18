@@ -26,6 +26,11 @@ import {
   DollarSign
 } from 'lucide-react-native';
 import { Expense } from '@/types';
+import { printReportToBluetooth, formatExpenseReport } from '@/utils/print-reports';
+import { useSettingsStore } from '@/store/settingsStore';
+import { PrinterSelectionModal } from '@/components/PrinterSelectionModal';
+import { Printer } from 'lucide-react-native';
+import { Alert } from 'react-native';
 
 // Helper function to format date
 const formatDate = (date: number | string): string => {
@@ -77,10 +82,13 @@ const getExpenseTitle = (expense: Expense): string => {
 export default function ExpensesReportScreen() {
   const router = useRouter();
   const { expenses } = useExpensesStore();
+  const { primaryPrinter, setPrimaryPrinter, businessInfo, paperSize } = useSettingsStore();
   
   const [isLoading, setIsLoading] = useState(true);
   const [timeFrame, setTimeFrame] = useState<'all' | 'month' | 'week' | 'today'>('month');
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
   
   // Filter expenses based on time frame
   const getFilteredExpenses = (): Expense[] => {
@@ -134,6 +142,91 @@ export default function ExpensesReportScreen() {
     console.log('Exporting expense report...');
   };
   
+  // Handle Bluetooth printing
+  const handleBluetoothPrint = async () => {
+    setIsPrinting(true);
+    
+    try {
+      const filteredExpenses = getFilteredExpenses();
+      const totalExpenses = getTotalExpenses(filteredExpenses);
+      const groupedExpenses = groupExpensesByCategory(filteredExpenses);
+      
+      // Calculate date range
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const weekAgo = today - 7 * 24 * 60 * 60 * 1000;
+      const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).getTime();
+      
+      let startDate: Date;
+      switch (timeFrame) {
+        case 'today':
+          startDate = new Date(today);
+          break;
+        case 'week':
+          startDate = new Date(weekAgo);
+          break;
+        case 'month':
+          startDate = new Date(monthAgo);
+          break;
+        default:
+          startDate = new Date(0); // All time
+      }
+      
+      // Category breakdown
+      const categoryBreakdown: Record<string, number> = {};
+      groupedExpenses.forEach(group => {
+        categoryBreakdown[group.category] = group.total;
+      });
+      
+      // Top expenses
+      const topExpenses = filteredExpenses
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 5)
+        .map(expense => ({
+          description: getExpenseTitle(expense),
+          amount: expense.amount
+        }));
+      
+      // Prepare report data
+      const reportData = {
+        businessName: businessInfo?.name,
+        dateRange: timeFrame === 'all' ? undefined : { start: startDate, end: now },
+        totalExpenses,
+        totalEntries: filteredExpenses.length,
+        avgExpense: filteredExpenses.length > 0 ? totalExpenses / filteredExpenses.length : 0,
+        categoryBreakdown,
+        topExpenses
+      };
+      
+      const success = await printReportToBluetooth(
+        formatExpenseReport(reportData, paperSize || '2inch'),
+        primaryPrinter,
+        () => setShowPrinterModal(true),
+        paperSize || '2inch'
+      );
+      
+      if (!success && !showPrinterModal) {
+        Alert.alert('Print Failed', 'Unable to print the report. Please check your printer connection.');
+      }
+    } catch (error) {
+      console.error('Print error:', error);
+      Alert.alert('Print Error', 'An error occurred while printing the report.');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+  
+  const handlePrinterSelected = async (printer: any) => {
+    setShowPrinterModal(false);
+    setPrimaryPrinter({
+      id: printer.id,
+      name: printer.name,
+      address: printer.address
+    });
+    // Retry printing with the selected printer
+    await handleBluetoothPrint();
+  };
+  
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -172,12 +265,27 @@ export default function ExpensesReportScreen() {
             </TouchableOpacity>
           ),
           headerRight: () => (
-            <TouchableOpacity 
-              style={styles.exportButton}
-              onPress={handleExport}
-            >
-              <Download size={20} color={colors.primary} />
-            </TouchableOpacity>
+            <View style={styles.headerButtons}>
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity 
+                  style={styles.headerButton}
+                  onPress={handleBluetoothPrint}
+                  disabled={isPrinting}
+                >
+                  {isPrinting ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Printer size={20} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity 
+                style={styles.headerButton}
+                onPress={handleExport}
+              >
+                <Download size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
           ),
         }} 
       />
@@ -323,6 +431,13 @@ export default function ExpensesReportScreen() {
           </>
         )}
       </ScrollView>
+      
+      {/* Printer Selection Modal */}
+      <PrinterSelectionModal
+        visible={showPrinterModal}
+        onClose={() => setShowPrinterModal(false)}
+        onPrinterSelected={handlePrinterSelected}
+      />
     </SafeAreaView>
   );
 }
@@ -338,6 +453,14 @@ const styles = StyleSheet.create({
   exportButton: {
     padding: 8,
     marginRight: 8,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerButton: {
+    padding: 8,
   },
   scrollContent: {
     padding: 16,

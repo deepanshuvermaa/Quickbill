@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { colors } from '@/constants/colors';
-import { useCustomersStore } from '@/store/customersStore';
+import { useCustomerStore } from '@/store/customerStore';
 import { Input } from '@/components/Input';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -21,9 +21,9 @@ import { ArrowLeft, User, Phone, Mail, MapPin, Save } from 'lucide-react-native'
 export default function EditCustomerScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { customers, updateCustomer } = useCustomersStore();
+  const { getCustomer, updateCustomer } = useCustomerStore();
   
-  const customer = customers.find(c => c.id === id);
+  const customer = getCustomer(id || '');
   
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -111,10 +111,10 @@ export default function EditCustomerScreen() {
     try {
       updateCustomer(customer.id, {
         name: name.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        address: address.trim(),
-        notes: notes.trim(),
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        address: address.trim() || undefined,
+        notes: notes.trim() || undefined,
       });
       
       Alert.alert(

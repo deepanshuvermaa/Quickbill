@@ -92,8 +92,8 @@ android {
         applicationId 'com.quickbill.pos'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.0.1"
+        versionCode 4
+        versionName "1.0.2"
     }
     signingConfigs {
         debug {
@@ -117,6 +117,16 @@ android {
             crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
         }
     }
+    
+    // Commented out custom APK naming to fix React Native CLI compatibility
+    // applicationVariants.all { variant ->
+    //     variant.outputs.all { output ->
+    //         if (variant.buildType.name == 'release') {
+    //             def date = new Date().format('yyyy-MM-dd-HHmm')
+    //             outputFileName = "quickbill-v${versionName}-${date}-release.apk"
+    //         }
+    //     }
+    // }
     packagingOptions {
         jniLibs {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)

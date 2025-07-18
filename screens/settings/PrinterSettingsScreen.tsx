@@ -39,7 +39,7 @@ interface BluetoothDeviceItem {
 export default function PrinterSettingsScreen() {
   const navigation = useNavigation();
   const { autoShowCart, setAutoShowCart } = useCartStore();
-  const { primaryPrinter, setPrimaryPrinter } = useSettingsStore();
+  const { primaryPrinter, setPrimaryPrinter, paperSize, setPaperSize } = useSettingsStore();
   const [loading, setLoading] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [devices, setDevices] = useState<BluetoothDeviceItem[]>([]);
@@ -247,6 +247,33 @@ export default function PrinterSettingsScreen() {
             trackColor={{ false: colors.grayLight, true: `${colors.primary}80` }}
             thumbColor={autoShowCart ? colors.primary : colors.gray}
           />
+        </View>
+      </Card>
+      
+      {/* Printer Settings */}
+      <Card style={styles.settingsCard}>
+        <Text style={styles.settingsTitle}>Printer Settings</Text>
+        
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>Paper Size</Text>
+          <View style={styles.paperSizeSelector}>
+            <TouchableOpacity
+              style={[styles.paperSizeOption, paperSize === '2inch' && styles.paperSizeOptionActive]}
+              onPress={() => setPaperSize('2inch')}
+            >
+              <Text style={[styles.paperSizeText, paperSize === '2inch' && styles.paperSizeTextActive]}>
+                2 inch
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.paperSizeOption, paperSize === '3inch' && styles.paperSizeOptionActive]}
+              onPress={() => setPaperSize('3inch')}
+            >
+              <Text style={[styles.paperSizeText, paperSize === '3inch' && styles.paperSizeTextActive]}>
+                3 inch
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Card>
       
@@ -485,5 +512,29 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 20,
     backgroundColor: colors.grayLight,
+  },
+  paperSizeSelector: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  paperSizeOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.gray,
+    backgroundColor: colors.white,
+  },
+  paperSizeOptionActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+  paperSizeText: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  paperSizeTextActive: {
+    color: colors.white,
+    fontWeight: '600',
   },
 });

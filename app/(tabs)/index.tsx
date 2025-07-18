@@ -15,7 +15,7 @@ import { TrialBanner } from '@/components/TrialBanner';
 import { GuestBanner } from '@/components/GuestBanner';
 import { useBillsStore } from '@/store/billsStore';
 import { useItemsStore } from '@/store/itemsStore';
-import { useCustomersStore } from '@/store/customersStore';
+import { useCustomerStore, initializeCustomerStore } from '@/store/customerStore';
 import { useExpensesStore } from '@/store/expensesStore';
 import { 
   ShoppingBag, 
@@ -34,11 +34,12 @@ export default function DashboardScreen() {
   const { toggleMenu } = useHamburgerMenu();
   const { bills } = useBillsStore();
   const { items, initializeWithMockData } = useItemsStore();
-  const { customers } = useCustomersStore();
+  const { customers } = useCustomerStore();
   const { expenses } = useExpensesStore();
   
-  // Initialize with mock data if no items exist
+  // Initialize stores
   useEffect(() => {
+    initializeCustomerStore();
     if (items.length === 0) {
       initializeWithMockData();
     }

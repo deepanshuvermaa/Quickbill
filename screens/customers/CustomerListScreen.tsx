@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useNavigation } from '@react-navigation/native';
 import { 
   Search, 
   Plus, 
@@ -31,10 +31,9 @@ import { formatPhoneNumber } from '@/utils/customerValidation';
 import { EmptyState } from '@/components/EmptyState';
 import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
-import { testCustomerSystem } from '@/utils/testCustomerSystem';
 
-export default function CustomersScreen() {
-  const router = useRouter();
+export default function CustomerListScreen() {
+  const navigation = useNavigation();
   const {
     customers,
     searchQuery,
@@ -97,7 +96,7 @@ export default function CustomersScreen() {
 
   const renderCustomerItem = useCallback(({ item }: { item: CustomerWithStats }) => (
     <TouchableOpacity
-      onPress={() => router.push(`/customers/${item.id}`)}
+      onPress={() => navigation.navigate('CustomerDetail', { customerId: item.id })}
       onLongPress={() => handleDeleteCustomer(item)}
     >
       <Card style={styles.customerCard}>
@@ -149,7 +148,7 @@ export default function CustomersScreen() {
         )}
       </Card>
     </TouchableOpacity>
-  ), [router, handleDeleteCustomer]);
+  ), [navigation, handleDeleteCustomer]);
 
   const ListHeader = useMemo(() => (
     <View style={styles.searchContainer}>
@@ -193,7 +192,7 @@ export default function CustomersScreen() {
           headerLeft: () => (
             <TouchableOpacity
               style={styles.headerButton}
-              onPress={() => router.back()}
+              onPress={() => navigation.goBack()}
             >
               <ArrowLeft size={24} color={colors.text} />
             </TouchableOpacity>
@@ -202,13 +201,13 @@ export default function CustomersScreen() {
             <View style={styles.headerActions}>
               <TouchableOpacity
                 style={styles.headerButton}
-                onPress={() => router.push('/customers/import-export')}
+                onPress={() => navigation.navigate('CustomerImportExport')}
               >
                 <Download size={20} color={colors.text} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.headerButton}
-                onPress={() => router.push('/customers/add')}
+                onPress={() => navigation.navigate('AddCustomer')}
               >
                 <Plus size={24} color={colors.primary} />
               </TouchableOpacity>
@@ -241,7 +240,7 @@ export default function CustomersScreen() {
 
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push('/customers/add')}
+        onPress={() => navigation.navigate('AddCustomer')}
         activeOpacity={0.8}
       >
         <Plus size={24} color={colors.white} />

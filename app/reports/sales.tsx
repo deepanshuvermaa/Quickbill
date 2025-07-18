@@ -25,13 +25,20 @@ import {
   Package
 } from 'lucide-react-native';
 import { exportBillWiseReport, exportItemWiseReport } from '@/utils/report-generator';
+import { printReportToBluetooth, formatSalesReport } from '@/utils/print-reports';
+import { useSettingsStore } from '@/store/settingsStore';
+import { PrinterSelectionModal } from '@/components/PrinterSelectionModal';
+import { Printer } from 'lucide-react-native';
 
 export default function SalesReportScreen() {
   const router = useRouter();
   const { bills } = useBillsStore();
+  const { primaryPrinter, setPrimaryPrinter, businessInfo, paperSize } = useSettingsStore();
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'week' | 'month' | 'year'>('week');
   const [isExporting, setIsExporting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [showPrinterModal, setShowPrinterModal] = useState(false);
   const [reportType, setReportType] = useState<'bill-wise' | 'item-wise'>('bill-wise');
   
   // Get current date
@@ -152,7 +159,7 @@ export default function SalesReportScreen() {
   const handleBillWiseReport = async () => {
     setIsExporting(true);
     try {
-      const success = await exportBillWiseReport(filteredBills, getPeriodLabel());
+      const success = await exportBillWiseReport(filteredBills, getPeriodLabel(), paperSize || '2inch');
       
       if (success) {
         Alert.alert(
@@ -183,7 +190,7 @@ export default function SalesReportScreen() {
   const handleItemWiseReport = async () => {
     setIsExporting(true);
     try {
-      const success = await exportItemWiseReport(filteredBills, getPeriodLabel());
+      const success = await exportItemWiseReport(filteredBills, getPeriodLabel(), paperSize || '2inch');
       
       if (success) {
         Alert.alert(
@@ -219,6 +226,82 @@ export default function SalesReportScreen() {
     }
   };
   
+  // Handle Bluetooth printing
+  const handleBluetoothPrint = async () => {
+    setIsPrinting(true);
+    
+    try {
+      // Calculate date range
+      let startDate: Date;
+      switch (selectedPeriod) {
+        case 'today':
+          startDate = today;
+          break;
+        case 'week':
+          startDate = weekStart;
+          break;
+        case 'month':
+          startDate = monthStart;
+          break;
+        case 'year':
+          startDate = yearStart;
+          break;
+        default:
+          startDate = weekStart;
+      }
+      
+      // Get payment breakdown
+      const paymentBreakdown: Record<string, number> = {};
+      salesByPaymentMethod.forEach(pm => {
+        paymentBreakdown[pm.method] = pm.total;
+      });
+      
+      // Prepare report data
+      const reportData = {
+        businessName: businessInfo?.name,
+        dateRange: { start: startDate, end: now },
+        totalSales,
+        totalOrders: filteredBills.length,
+        avgOrderValue: averageSale,
+        totalTax: filteredBills.reduce((sum, bill) => sum + (bill.tax || 0), 0),
+        totalDiscount: filteredBills.reduce((sum, bill) => sum + (bill.discount || 0), 0),
+        topProducts: topSellingItems.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          revenue: item.total
+        })),
+        paymentBreakdown
+      };
+      
+      const success = await printReportToBluetooth(
+        formatSalesReport(reportData, paperSize || '2inch'),
+        primaryPrinter,
+        () => setShowPrinterModal(true),
+        paperSize || '2inch'
+      );
+      
+      if (!success && !showPrinterModal) {
+        Alert.alert('Print Failed', 'Unable to print the report. Please check your printer connection.');
+      }
+    } catch (error) {
+      console.error('Print error:', error);
+      Alert.alert('Print Error', 'An error occurred while printing the report.');
+    } finally {
+      setIsPrinting(false);
+    }
+  };
+  
+  const handlePrinterSelected = async (printer: any) => {
+    setShowPrinterModal(false);
+    setPrimaryPrinter({
+      id: printer.id,
+      name: printer.name,
+      address: printer.address
+    });
+    // Retry printing with the selected printer
+    await handleBluetoothPrint();
+  };
+  
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen 
@@ -234,6 +317,19 @@ export default function SalesReportScreen() {
           ),
           headerRight: () => (
             <View style={styles.headerButtons}>
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity 
+                  style={styles.headerButton}
+                  onPress={handleBluetoothPrint}
+                  disabled={isPrinting}
+                >
+                  {isPrinting ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Printer size={20} color={colors.primary} />
+                  )}
+                </TouchableOpacity>
+              )}
               <TouchableOpacity 
                 style={styles.headerButton}
                 onPress={handleExportReport}
@@ -457,6 +553,13 @@ export default function SalesReportScreen() {
           )}
         </Card>
       </ScrollView>
+      
+      {/* Printer Selection Modal */}
+      <PrinterSelectionModal
+        visible={showPrinterModal}
+        onClose={() => setShowPrinterModal(false)}
+        onPrinterSelected={handlePrinterSelected}
+      />
     </SafeAreaView>
   );
 }

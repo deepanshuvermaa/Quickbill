@@ -19,6 +19,8 @@ import { CartItem } from '@/types';
 import { CartItemCard } from './CartItemCard';
 import { Button } from './Button';
 import { EmptyState } from './EmptyState';
+import { CustomerSuggestions } from './CustomerSuggestions';
+import { useCustomerStore } from '@/store/customerStore';
 import {
   ShoppingCart,
   X,
@@ -27,6 +29,7 @@ import {
   User,
   Phone,
   FileText,
+  Users,
 } from 'lucide-react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -54,6 +57,9 @@ interface CartBottomSheetProps {
   isCreatingBill: boolean;
   getSubtotal: () => number;
   getTotal: () => number;
+  onSelectCustomer?: (customerId: string | null, name: string, phone?: string) => void;
+  onOpenCustomerModal?: () => void;
+  selectedCustomerId?: string | null;
 }
 
 export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
@@ -79,10 +85,16 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
   isCreatingBill,
   getSubtotal,
   getTotal,
+  onSelectCustomer,
+  onOpenCustomerModal,
+  selectedCustomerId,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const translateY = useRef(new Animated.Value(screenHeight)).current;
   const lastGestureDy = useRef(0);
+  const customerStore = useCustomerStore();
+  const { getCustomerById } = customerStore || {};
   
   const COLLAPSED_HEIGHT = screenHeight * 0.7;
   const FULL_HEIGHT = screenHeight - (Platform.OS === 'ios' ? 150 : 120); // Account for tab bar and safe areas
@@ -332,15 +344,66 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
               <View style={styles.customerSection}>
                 <Text style={styles.sectionTitle}>Customer Information</Text>
                 
-                <View style={styles.inputContainer}>
+                <View style={[styles.inputContainer, { zIndex: 2 }]}>
                   <User size={20} color={colors.primary} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
                     placeholder="Customer Name *"
-                    value={customerName}
-                    onChangeText={onSetCustomerName}
+                    value={customerName || ''}
+                    onChangeText={(text) => {
+                      try {
+                        onSetCustomerName(text);
+                        setShowSuggestions(text.length > 0);
+                      } catch (error) {
+                        console.error('Error setting customer name:', error);
+                      }
+                    }}
+                    onFocus={() => {
+                      try {
+                        setShowSuggestions((customerName || '').length > 0);
+                      } catch (error) {
+                        console.error('Error on focus:', error);
+                      }
+                    }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholderTextColor={colors.gray}
                   />
+                  {onOpenCustomerModal && (
+                    <TouchableOpacity
+                      style={styles.selectCustomerIcon}
+                      onPress={onOpenCustomerModal}
+                    >
+                      <Users size={20} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                  {showSuggestions && (
+                    <View>
+                      <CustomerSuggestions
+                        searchQuery={customerName}
+                        onSelectCustomer={(customer) => {
+                          try {
+                            if (!customer || !customer.name) {
+                              console.warn('Invalid customer data');
+                              setShowSuggestions(false);
+                              return;
+                            }
+                            
+                            onSetCustomerName(customer.name);
+                            onSetCustomerPhone(customer.phone || '');
+                            
+                            if (onSelectCustomer && typeof onSelectCustomer === 'function') {
+                              // Call the customer selection handler with proper parameters
+                              onSelectCustomer(customer.id, customer.name, customer.phone);
+                            }
+                            setShowSuggestions(false);
+                          } catch (error) {
+                            console.error('Error selecting customer:', error);
+                            setShowSuggestions(false);
+                          }
+                        }}
+                      />
+                    </View>
+                  )}
                 </View>
                 
                 <View style={styles.inputContainer}>
@@ -646,5 +709,27 @@ const styles = StyleSheet.create({
   },
   createBillButton: {
     borderRadius: 12,
+  },
+  selectCustomerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+    gap: 12,
+  },
+  selectCustomerButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  selectCustomerIcon: {
+    padding: 8,
+    marginLeft: 8,
   },
 });

@@ -31,11 +31,13 @@ interface SettingsState {
   defaultTaxRate: number;
   primaryPrinter: PrimaryPrinter | null;
   taxConfig: TaxConfig | null;
+  paperSize: '2inch' | '3inch';
   
   updateBusinessInfo: (info: Partial<BusinessInfo>) => void;
   setDefaultTaxRate: (rate: number) => void;
   setPrimaryPrinter: (printer: PrimaryPrinter | null) => void;
   updateTaxConfig: (config: TaxConfig) => void;
+  setPaperSize: (size: '2inch' | '3inch') => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -51,6 +53,7 @@ export const useSettingsStore = create<SettingsState>()(
       defaultTaxRate: 0,
       primaryPrinter: null,
       taxConfig: null,
+      paperSize: '2inch',
       
       updateBusinessInfo: (info) => {
         set((state) => ({
@@ -68,6 +71,10 @@ export const useSettingsStore = create<SettingsState>()(
       
       updateTaxConfig: (config) => {
         set({ taxConfig: config });
+      },
+      
+      setPaperSize: (size) => {
+        set({ paperSize: size });
       },
     }),
     {

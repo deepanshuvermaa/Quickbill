@@ -20,6 +20,7 @@ export interface Bill {
   id: string;
   invoiceNumber?: string; // New field for display invoice number
   billNumber?: string; // Sequential bill number
+  customerId?: string | null; // Customer ID from customer management
   customerName: string;
   customerPhone?: string;
   items: CartItem[];

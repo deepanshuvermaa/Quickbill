@@ -26,116 +26,92 @@ export const generateInventoryCSV = (items: Item[]): string => {
 
 // Generate printable inventory report
 export const generateInventoryReport = (items: Item[]): string => {
-  const lineWidth = 58;
-  const divider = '-'.repeat(lineWidth);
+  const lineWidth = 32; // 32 chars for 58mm printer
+  const divider = '='.repeat(lineWidth);
   
   let output = '';
   
   // Header
-  output += centerText('INVENTORY REPORT', lineWidth) + '\n';
-  output += centerText(`Generated: ${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}`, lineWidth) + '\n';
-  output += divider + '\n\n';
+  output += 'INVENTORY REPORT\n\n';
+  
+  // Format date and time
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-IN', { 
+    day: '2-digit', 
+    month: 'numeric', 
+    year: '2-digit' 
+  });
+  const timeStr = now.toLocaleTimeString('en-IN', { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    hour12: true 
+  }).toUpperCase();
+  
+  output += `Generated: ${dateStr} ${timeStr}\n`;
+  output += divider + '\n';
   
   // Summary
   const totalItems = items.length;
   const totalStock = items.reduce((sum, item) => sum + (item.stock || 0), 0);
   const totalValue = items.reduce((sum, item) => sum + (item.price * (item.stock || 0)), 0);
-  const lowStockItems = items.filter(item => item.stock !== undefined && item.stock < 10).length;
+  const lowStockItems = items.filter(item => item.stock !== undefined && item.stock > 0 && item.stock < 10).length;
   const outOfStockItems = items.filter(item => !item.stock || item.stock === 0).length;
   
-  output += `Total Items: ${totalItems}\n`;
-  output += `Total Stock: ${totalStock} units\n`;
-  output += `Total Value: Rs.${totalValue.toFixed(2)}\n`;
-  output += `Low Stock Items: ${lowStockItems}\n`;
-  output += `Out of Stock: ${outOfStockItems}\n\n`;
+  output += 'SUMMARY:\n';
+  output += `Items: ${totalItems} | Stock: ${totalStock} units\n`;
+  output += `Value: Rs.${totalValue.toFixed(2)}\n`;
+  output += `Low Stock: ${lowStockItems} | Out of Stock: ${outOfStockItems}\n`;
   output += divider + '\n';
+  
+  // Table header
+  output += 'ITEM               PRICE    QTY   VALUE\n';
+  output += '-'.repeat(lineWidth) + '\n';
   
   // Group items by category
   const categories = new Map<string, Item[]>();
   items.forEach(item => {
-    const category = item.category || 'Uncategorized';
+    const category = item.category || 'UNCATEGORIZED';
     if (!categories.has(category)) {
       categories.set(category, []);
     }
     categories.get(category)!.push(item);
   });
   
+  let grandTotalQty = 0;
+  let grandTotalValue = 0;
+  
   // Items by category
   categories.forEach((categoryItems, categoryName) => {
-    output += `\nCATEGORY: ${categoryName.toUpperCase()}\n`;
-    output += divider + '\n';
+    output += categoryName.toUpperCase() + '\n';
     
-    // Header for items
-    output += 'ITEM NAME'.padEnd(20) + 'PRICE'.padEnd(10) + 'STOCK'.padEnd(8) + 'VALUE'.padEnd(10) + 'STATUS\n';
-    output += '-'.repeat(58) + '\n';
+    let categoryQty = 0;
+    let categoryValue = 0;
     
-    // Sort items in category by stock status (out of stock first, then low stock)
-    const sortedItems = [...categoryItems].sort((a, b) => {
-      const getStockPriority = (stock?: number) => {
-        if (!stock || stock === 0) return 0; // Out of stock - highest priority
-        if (stock < 10) return 1; // Low stock
-        return 2; // In stock
-      };
-      
-      return getStockPriority(a.stock) - getStockPriority(b.stock);
-    });
+    // Sort items by name for consistency
+    const sortedItems = [...categoryItems].sort((a, b) => a.name.localeCompare(b.name));
     
     sortedItems.forEach(item => {
-      const name = truncate(item.name, 19);
-      const price = `Rs.${item.price.toFixed(2)}`;
-      const stock = (item.stock || 0).toString();
-      const value = `Rs.${((item.stock || 0) * item.price).toFixed(2)}`;
+      const name = item.name.length > 18 ? item.name.substring(0, 15) + '...' : item.name;
+      const price = item.price.toFixed(2).padStart(7);
+      const qty = (item.stock || 0).toString().padStart(5);
+      const value = ((item.stock || 0) * item.price).toFixed(0).padStart(7);
       
-      let status = 'OK';
-      if (!item.stock || item.stock === 0) {
-        status = 'OUT';
-      } else if (item.stock < 10) {
-        status = 'LOW';
-      }
+      output += `${name.padEnd(18)} ${price} ${qty} ${value}\n`;
       
-      output += name.padEnd(20) + 
-                price.padEnd(10) + 
-                stock.padEnd(8) + 
-                value.padEnd(10) + 
-                status + '\n';
+      categoryQty += item.stock || 0;
+      categoryValue += (item.stock || 0) * item.price;
     });
     
-    // Category summary
-    const categoryStock = categoryItems.reduce((sum, item) => sum + (item.stock || 0), 0);
-    const categoryValue = categoryItems.reduce((sum, item) => sum + (item.price * (item.stock || 0)), 0);
+    // Category subtotal
+    output += `                  Subtotal: ${categoryQty.toString().padStart(3)} ${categoryValue.toFixed(0).padStart(8)}\n`;
     
-    output += '-'.repeat(58) + '\n';
-    output += `Category Total: ${categoryItems.length} items, ${categoryStock} units, Rs.${categoryValue.toFixed(2)}\n`;
+    grandTotalQty += categoryQty;
+    grandTotalValue += categoryValue;
   });
   
-  output += '\n' + divider + '\n';
-  
-  // Low stock alerts
-  const lowStockList = items.filter(item => item.stock !== undefined && item.stock > 0 && item.stock < 10);
-  if (lowStockList.length > 0) {
-    output += '\nLOW STOCK ALERTS:\n';
-    output += divider + '\n';
-    
-    lowStockList.forEach(item => {
-      output += `* ${item.name} - ${item.stock} units remaining\n`;
-    });
-    output += '\n';
-  }
-  
-  // Out of stock alerts
-  const outOfStockList = items.filter(item => !item.stock || item.stock === 0);
-  if (outOfStockList.length > 0) {
-    output += 'OUT OF STOCK ITEMS:\n';
-    output += divider + '\n';
-    
-    outOfStockList.forEach(item => {
-      output += `* ${item.name} - RESTOCK NEEDED\n`;
-    });
-    output += '\n';
-  }
-  
+  // Grand total
   output += divider + '\n';
-  output += centerText('END OF REPORT', lineWidth) + '\n';
+  output += `TOTAL                      ${grandTotalQty.toString().padStart(3)} ${grandTotalValue.toFixed(0).padStart(8)}\n`;
   
   return output;
 };

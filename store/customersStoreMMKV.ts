@@ -1,8 +1,25 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
+import { MMKV } from 'react-native-mmkv';
 import { generateUniqueId } from '@/utils/helpers';
 import { generateMockCustomers } from '@/utils/customer-mock-data';
+
+// Create MMKV instance
+const storage = new MMKV();
+
+// Create Zustand storage adapter for MMKV
+const mmkvStorage: StateStorage = {
+  getItem: (name: string) => {
+    const value = storage.getString(name);
+    return value ?? null;
+  },
+  setItem: (name: string, value: string) => {
+    storage.set(name, value);
+  },
+  removeItem: (name: string) => {
+    storage.delete(name);
+  },
+};
 
 export interface Customer {
   id: string;
@@ -56,7 +73,7 @@ interface CustomersState {
   setHasHydrated: (hydrated: boolean) => void;
 }
 
-export const useCustomersStore = create<CustomersState>()(
+export const useCustomersStoreMMKV = create<CustomersState>()(
   persist(
     (set, get) => ({
       customers: [],
@@ -79,24 +96,13 @@ export const useCustomersStore = create<CustomersState>()(
           updatedAt: now,
         };
         
-        console.log('[CustomerStore] Adding customer:', newCustomer);
+        console.log('[CustomerStore MMKV] Adding customer:', newCustomer);
         
-        set((state) => {
-          console.log('[CustomerStore] Current customers count:', state.customers.length);
-          const updatedCustomers = [newCustomer, ...state.customers];
-          console.log('[CustomerStore] Updated customers count:', updatedCustomers.length);
-          return {
-            customers: updatedCustomers,
-          };
-        });
+        set((state) => ({
+          customers: [newCustomer, ...state.customers],
+        }));
         
-        // Force a state update to ensure UI refreshes
-        setTimeout(() => {
-          const finalState = get();
-          console.log('[CustomerStore] Final customers count after add:', finalState.customers.length);
-        }, 100);
-        
-        console.log('[CustomerStore] Customer added with ID:', id);
+        console.log('[CustomerStore MMKV] Customer added with ID:', id);
         
         return id;
       },
@@ -255,7 +261,7 @@ export const useCustomersStore = create<CustomersState>()(
         if (hasHydrated && currentCustomers.length === 0) {
           const mockCustomers = generateMockCustomers(20);
           const result = get().importCustomers(mockCustomers);
-          console.log(`Initialized with ${result.success} mock customers`);
+          console.log(`[MMKV] Initialized with ${result.success} mock customers`);
         }
       },
       
@@ -264,16 +270,15 @@ export const useCustomersStore = create<CustomersState>()(
       },
     }),
     {
-      name: 'customers-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      name: 'customers-storage-mmkv',
+      storage: createJSONStorage(() => mmkvStorage),
       onRehydrateStorage: () => (state) => {
-        console.log('[CustomerStore] Starting hydration...');
+        console.log('[CustomerStore MMKV] Starting hydration...');
         return (state, error) => {
           if (error) {
-            console.error('[CustomerStore] Hydration error:', error);
+            console.error('[CustomerStore MMKV] Hydration error:', error);
           } else {
-            console.log('[CustomerStore] Hydration complete. Customers:', state?.customers?.length || 0);
-            // Called when hydration finishes
+            console.log('[CustomerStore MMKV] Hydration complete. Customers:', state?.customers?.length || 0);
             state?.setHasHydrated(true);
           }
         };

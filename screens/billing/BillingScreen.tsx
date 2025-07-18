@@ -34,7 +34,8 @@ import {
   Bluetooth,
   ChevronUp,
   ChevronDown,
-  AlertCircle
+  AlertCircle,
+  Users
 } from 'lucide-react-native';
 import { 
   ensureBluetoothReady, 
@@ -45,6 +46,8 @@ import {
 import { Item, CartItem, PaymentMethod } from '@/types';
 import { printOrShareBill } from '@/utils/print';
 import { useBillsStore } from '@/store/billsStore';
+import { useCustomerStore } from '@/store/customerStore';
+import { CustomerSelectionModal } from '@/components/CustomerSelectionModal';
 // Hamburger menu import removed
 
 const { width, height } = Dimensions.get('window');
@@ -59,6 +62,7 @@ export default function BillingScreen() {
   const { primaryPrinter, setPrimaryPrinter } = useSettingsStore();
   const { 
     items: cartItems, 
+    customerId,
     customerName, 
     customerPhone, 
     notes, 
@@ -69,8 +73,10 @@ export default function BillingScreen() {
     updateItemQuantity, 
     removeItem, 
     clearCart,
+    setCustomerId,
     setCustomerName,
     setCustomerPhone,
+    setCustomerDetails,
     setNotes,
     setDiscount,
     setTax,
@@ -80,6 +86,8 @@ export default function BillingScreen() {
     autoShowCart
   } = useCartStore();
   
+  const { updateCustomerStats } = useCustomerStore();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCreatingBill, setIsCreatingBill] = useState(false);
@@ -87,6 +95,12 @@ export default function BillingScreen() {
   const [isCartVisible, setIsCartVisible] = useState(false);
   const [createdBillId, setCreatedBillId] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  
+  const handleSelectCustomer = (customer) => {
+    setCustomerDetails(customer.id, customer.name, customer.phone || '');
+    setShowCustomerModal(false);
+  };
   
   // Initialize with mock data if no items exist
   useEffect(() => {
@@ -202,6 +216,12 @@ export default function BillingScreen() {
       // Update inventory stock for each item in the bill
       for (const item of cartItems) {
         updateItemStock(item.id, -item.quantity); // Reduce stock by the quantity sold
+      }
+      
+      // Update customer stats if a customer is selected
+      if (customerId) {
+        const total = getTotal();
+        updateCustomerStats(customerId, total);
       }
       
       // Auto-clear cart after successful bill creation
@@ -702,32 +722,64 @@ export default function BillingScreen() {
                   <View style={styles.customerInfoContainer}>
                     <Text style={styles.sectionTitle}>Customer Information</Text>
                     
-                    <View style={styles.inputRow}>
-                      <View style={styles.inputContainer}>
-                        <User size={20} color={colors.primary} style={styles.inputIcon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Customer Name *"
-                          value={customerName}
-                          onChangeText={setCustomerName}
-                          placeholderTextColor={colors.gray}
-                        />
-                      </View>
-                    </View>
+                    <TouchableOpacity 
+                      style={styles.customerSelectionButton}
+                      onPress={() => setShowCustomerModal(true)}
+                    >
+                      <Users size={20} color={colors.primary} />
+                      <Text style={styles.customerSelectionText}>
+                        {customerId ? 'Change Customer' : 'Select Customer'}
+                      </Text>
+                    </TouchableOpacity>
                     
-                    <View style={styles.inputRow}>
-                      <View style={styles.inputContainer}>
-                        <Phone size={20} color={colors.primary} style={styles.inputIcon} />
-                        <TextInput
-                          style={styles.input}
-                          placeholder="Phone Number"
-                          value={customerPhone}
-                          onChangeText={setCustomerPhone}
-                          keyboardType="phone-pad"
-                          placeholderTextColor={colors.gray}
-                        />
+                    {customerId ? (
+                      <View style={styles.selectedCustomerInfo}>
+                        <View style={styles.inputRow}>
+                          <View style={styles.inputContainer}>
+                            <User size={20} color={colors.primary} style={styles.inputIcon} />
+                            <Text style={styles.selectedCustomerText}>{customerName}</Text>
+                          </View>
+                        </View>
+                        
+                        {customerPhone && (
+                          <View style={styles.inputRow}>
+                            <View style={styles.inputContainer}>
+                              <Phone size={20} color={colors.primary} style={styles.inputIcon} />
+                              <Text style={styles.selectedCustomerText}>{customerPhone}</Text>
+                            </View>
+                          </View>
+                        )}
                       </View>
-                    </View>
+                    ) : (
+                      <>
+                        <View style={styles.inputRow}>
+                          <View style={styles.inputContainer}>
+                            <User size={20} color={colors.primary} style={styles.inputIcon} />
+                            <TextInput
+                              style={styles.input}
+                              placeholder="Customer Name *"
+                              value={customerName}
+                              onChangeText={setCustomerName}
+                              placeholderTextColor={colors.gray}
+                            />
+                          </View>
+                        </View>
+                        
+                        <View style={styles.inputRow}>
+                          <View style={styles.inputContainer}>
+                            <Phone size={20} color={colors.primary} style={styles.inputIcon} />
+                            <TextInput
+                              style={styles.input}
+                              placeholder="Phone Number"
+                              value={customerPhone}
+                              onChangeText={setCustomerPhone}
+                              keyboardType="phone-pad"
+                              placeholderTextColor={colors.gray}
+                            />
+                          </View>
+                        </View>
+                      </>
+                    )}
                     
                     <View style={styles.inputRow}>
                       <View style={styles.inputContainer}>
@@ -997,32 +1049,64 @@ export default function BillingScreen() {
                     <View style={styles.customerInfoContainer}>
                       <Text style={styles.sectionTitle}>Customer Information</Text>
                       
-                      <View style={styles.inputRow}>
-                        <View style={styles.inputContainer}>
-                          <User size={20} color={colors.primary} style={styles.inputIcon} />
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Customer Name *"
-                            value={customerName}
-                            onChangeText={setCustomerName}
-                            placeholderTextColor={colors.gray}
-                          />
-                        </View>
-                      </View>
+                      <TouchableOpacity 
+                        style={styles.customerSelectionButton}
+                        onPress={() => setShowCustomerModal(true)}
+                      >
+                        <Users size={20} color={colors.primary} />
+                        <Text style={styles.customerSelectionText}>
+                          {customerId ? 'Change Customer' : 'Select Customer'}
+                        </Text>
+                      </TouchableOpacity>
                       
-                      <View style={styles.inputRow}>
-                        <View style={styles.inputContainer}>
-                          <Phone size={20} color={colors.primary} style={styles.inputIcon} />
-                          <TextInput
-                            style={styles.input}
-                            placeholder="Phone Number"
-                            value={customerPhone}
-                            onChangeText={setCustomerPhone}
-                            keyboardType="phone-pad"
-                            placeholderTextColor={colors.gray}
-                          />
+                      {customerId ? (
+                        <View style={styles.selectedCustomerInfo}>
+                          <View style={styles.inputRow}>
+                            <View style={styles.inputContainer}>
+                              <User size={20} color={colors.primary} style={styles.inputIcon} />
+                              <Text style={styles.selectedCustomerText}>{customerName}</Text>
+                            </View>
+                          </View>
+                          
+                          {customerPhone && (
+                            <View style={styles.inputRow}>
+                              <View style={styles.inputContainer}>
+                                <Phone size={20} color={colors.primary} style={styles.inputIcon} />
+                                <Text style={styles.selectedCustomerText}>{customerPhone}</Text>
+                              </View>
+                            </View>
+                          )}
                         </View>
-                      </View>
+                      ) : (
+                        <>
+                          <View style={styles.inputRow}>
+                            <View style={styles.inputContainer}>
+                              <User size={20} color={colors.primary} style={styles.inputIcon} />
+                              <TextInput
+                                style={styles.input}
+                                placeholder="Customer Name *"
+                                value={customerName}
+                                onChangeText={setCustomerName}
+                                placeholderTextColor={colors.gray}
+                              />
+                            </View>
+                          </View>
+                          
+                          <View style={styles.inputRow}>
+                            <View style={styles.inputContainer}>
+                              <Phone size={20} color={colors.primary} style={styles.inputIcon} />
+                              <TextInput
+                                style={styles.input}
+                                placeholder="Phone Number"
+                                value={customerPhone}
+                                onChangeText={setCustomerPhone}
+                                keyboardType="phone-pad"
+                                placeholderTextColor={colors.gray}
+                              />
+                            </View>
+                          </View>
+                        </>
+                      )}
                       
                       <View style={styles.inputRow}>
                         <View style={styles.inputContainer}>
@@ -1070,6 +1154,13 @@ export default function BillingScreen() {
         visible={showPrinterModal}
         onClose={() => setShowPrinterModal(false)}
         onPrinterSelected={handlePrinterSelected}
+      />
+      
+      <CustomerSelectionModal
+        visible={showCustomerModal}
+        onClose={() => setShowCustomerModal(false)}
+        onSelectCustomer={handleSelectCustomer}
+        selectedCustomerId={customerId}
       />
     </View>
   );
@@ -1406,6 +1497,33 @@ const styles = StyleSheet.create({
   createBillButton: {
     marginTop: 8,
     marginBottom: 12, // Add bottom margin to ensure button is visible when scrolling
+  },
+  customerSelectionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: colors.primary + '10',
+    borderWidth: 1,
+    borderColor: colors.primary,
+    marginBottom: 12,
+  },
+  customerSelectionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.primary,
+    marginLeft: 8,
+  },
+  selectedCustomerInfo: {
+    marginBottom: 8,
+  },
+  selectedCustomerText: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '500',
   },
   buttonLoader: {
     marginRight: 8,
