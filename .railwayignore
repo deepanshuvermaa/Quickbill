@@ -1,0 +1,26 @@
+# Ignore React Native app files for Railway deployment
+node_modules/
+android/
+ios/
+app/
+assets/
+components/
+screens/
+store/
+types/
+navigation/
+*.apk
+*.ipa
+*.aab
+expo-*
+.expo/
+dist/
+web-build/
+package.json
+package-lock.json
+.npmrc
+metro.config.js
+babel.config.js
+app.json
+App.tsx
+index.js
