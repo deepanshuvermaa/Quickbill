@@ -92,11 +92,17 @@ android {
         applicationId 'com.quickbill.pos'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 4
-        versionName "1.0.2"
+        versionCode 7
+        versionName "1.0.4"
     }
     signingConfigs {
         debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+        release {
             storeFile file('debug.keystore')
             storePassword 'android'
             keyAlias 'androiddebugkey'
@@ -108,25 +114,24 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
-            shrinkResources (findProperty('android.enableShrinkResourcesInReleaseBuilds')?.toBoolean() ?: false)
-            minifyEnabled enableProguardInReleaseBuilds
+            signingConfig signingConfigs.release
+            shrinkResources false
+            minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             crunchPngs (findProperty('android.enablePngCrunchInReleaseBuilds')?.toBoolean() ?: true)
         }
     }
     
-    // Commented out custom APK naming to fix React Native CLI compatibility
-    // applicationVariants.all { variant ->
-    //     variant.outputs.all { output ->
-    //         if (variant.buildType.name == 'release') {
-    //             def date = new Date().format('yyyy-MM-dd-HHmm')
-    //             outputFileName = "quickbill-v${versionName}-${date}-release.apk"
-    //         }
-    //     }
-    // }
+    // Custom APK naming
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            if (variant.buildType.name == 'release') {
+                def date = new Date().format('yyyy-MM-dd-HHmm')
+                outputFileName = "quickbill-v${versionName}-${date}-release.apk"
+            }
+        }
+    }
+    
     packagingOptions {
         jniLibs {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)

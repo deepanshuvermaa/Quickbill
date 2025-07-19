@@ -76,6 +76,9 @@ export const createBillFromCart = async (): Promise<string> => {
     (taxConfig.igst || cartStore.tax) : 
     cartStore.tax;
   
+  // Calculate total tax (item taxes + bill tax on non-taxed items)
+  const totalTax = cartStore.getItemsTaxTotal() + cartStore.getBillTax();
+  
   // Create the bill object
   const bill: Bill = {
     id: billId,
@@ -89,9 +92,9 @@ export const createBillFromCart = async (): Promise<string> => {
       total: item.price * item.quantity
     })),
     subtotal: cartStore.getSubtotal(),
-    tax: cartStore.getSubtotal() * (taxRate / 100),
-    taxRate: taxRate,
-    discount: cartStore.getSubtotal() * (cartStore.discount / 100),
+    tax: totalTax,
+    taxRate: taxRate, // This is the default/bill tax rate
+    discount: cartStore.getSubtotalWithItemTax() * (cartStore.discount / 100),
     total: cartStore.getTotal(),
     paymentMethod: cartStore.paymentMethod as PaymentMethod,
     notes: cartStore.notes,

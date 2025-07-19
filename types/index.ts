@@ -7,6 +7,8 @@ export interface Item {
   stock?: number;
   unit?: string;
   sku?: string;
+  hsnCode?: string;
+  taxRate?: number;
   createdAt: number;
   updatedAt: number;
 }

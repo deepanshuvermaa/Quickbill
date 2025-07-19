@@ -73,6 +73,10 @@ export default function BillingScreen() {
     setTax,
     setPaymentMethod,
     getSubtotal,
+    getSubtotalWithItemTax,
+    getItemsTaxTotal,
+    getBillTaxableAmount,
+    getBillTax,
     getTotal,
   } = useCartStore();
   
@@ -464,6 +468,8 @@ export default function BillingScreen() {
         onSetPaymentMethod={setPaymentMethod}
         onCreateBill={handleCreateBill}
         isCreatingBill={isCreatingBill}
+        getItemsTaxTotal={getItemsTaxTotal}
+        getBillTax={getBillTax}
         getSubtotal={getSubtotal}
         getTotal={getTotal}
         onSelectCustomer={handleSelectCustomer}

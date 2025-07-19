@@ -23,11 +23,8 @@ export default function EditItemScreen() {
   const [description, setDescription] = useState('');
   const [stock, setStock] = useState('');
   const [unit, setUnit] = useState('');
-  
-  // Tax fields
-  const [taxType, setTaxType] = useState<'GST' | 'IGST' | 'EXEMPT'>('GST');
-  const [gstRate, setGstRate] = useState('');
-  const [igstRate, setIgstRate] = useState('');
+  const [hsnCode, setHsnCode] = useState('');
+  const [taxRate, setTaxRate] = useState('');
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -39,11 +36,8 @@ export default function EditItemScreen() {
       setDescription(item.description || '');
       setStock(item.stock !== undefined ? item.stock.toString() : '');
       setUnit(item.unit || '');
-      
-      // Load tax fields
-      setTaxType(item.taxType || 'GST');
-      setGstRate(item.gstRate !== undefined ? item.gstRate.toString() : '');
-      setIgstRate(item.igstRate !== undefined ? item.igstRate.toString() : '');
+      setHsnCode(item.hsnCode || '');
+      setTaxRate(item.taxRate !== undefined ? item.taxRate.toString() : '');
     } else {
       Alert.alert("Error", "Item not found", [
         { text: "OK", onPress: () => navigation.goBack() }
@@ -68,16 +62,13 @@ export default function EditItemScreen() {
       newErrors.stock = 'Stock must be a non-negative number';
     }
     
-    // Validate tax rates
-    if (taxType === 'GST' && gstRate.trim()) {
-      if (isNaN(Number(gstRate)) || Number(gstRate) < 0 || Number(gstRate) > 100) {
-        newErrors.gstRate = 'GST rate must be between 0 and 100';
-      }
-    }
-    
-    if (taxType === 'IGST' && igstRate.trim()) {
-      if (isNaN(Number(igstRate)) || Number(igstRate) < 0 || Number(igstRate) > 100) {
-        newErrors.igstRate = 'IGST rate must be between 0 and 100';
+    // Validate tax rate
+    if (taxRate.trim()) {
+      const taxValue = parseFloat(taxRate);
+      if (isNaN(taxValue) || taxValue < 0 || taxValue > 100) {
+        newErrors.taxRate = 'Tax rate must be between 0 and 100';
+      } else if (taxRate.includes('.') && taxRate.split('.')[1].length > 2) {
+        newErrors.taxRate = 'Tax rate can have maximum 2 decimal places';
       }
     }
     
@@ -96,8 +87,8 @@ export default function EditItemScreen() {
         description: description.trim(),
         stock: stock.trim() ? Number(stock) : undefined,
         unit: unit.trim(),
-        // Tax fields
-        taxType: taxType,
+        hsnCode: hsnCode.trim() || undefined,
+        taxRate: taxRate.trim() ? parseFloat(taxRate) : undefined,
         gstRate: taxType === 'GST' && gstRate.trim() ? Number(gstRate) : undefined,
         igstRate: taxType === 'IGST' && igstRate.trim() ? Number(igstRate) : undefined,
       });
@@ -214,91 +205,35 @@ export default function EditItemScreen() {
               />
             </View>
           </View>
+          
+          <Input
+            label="HSN Code (Optional)"
+            value={hsnCode}
+            onChangeText={setHsnCode}
+            placeholder="Enter HSN code"
+            autoCapitalize="characters"
+          />
         </Card>
         
         <Card style={styles.taxCard}>
           <Text style={styles.sectionTitle}>Tax Settings</Text>
           
-          <View style={styles.taxTypeContainer}>
-            <Text style={styles.label}>Tax Type</Text>
-            <View style={styles.taxTypeButtons}>
-              <TouchableOpacity
-                style={[
-                  styles.taxTypeButton,
-                  taxType === 'GST' && styles.taxTypeButtonActive
-                ]}
-                onPress={() => setTaxType('GST')}
-              >
-                <Text style={[
-                  styles.taxTypeButtonText,
-                  taxType === 'GST' && styles.taxTypeButtonTextActive
-                ]}>GST</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.taxTypeButton,
-                  taxType === 'IGST' && styles.taxTypeButtonActive
-                ]}
-                onPress={() => setTaxType('IGST')}
-              >
-                <Text style={[
-                  styles.taxTypeButtonText,
-                  taxType === 'IGST' && styles.taxTypeButtonTextActive
-                ]}>IGST</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[
-                  styles.taxTypeButton,
-                  taxType === 'EXEMPT' && styles.taxTypeButtonActive
-                ]}
-                onPress={() => setTaxType('EXEMPT')}
-              >
-                <Text style={[
-                  styles.taxTypeButtonText,
-                  taxType === 'EXEMPT' && styles.taxTypeButtonTextActive
-                ]}>Tax Exempt</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-          
-          {taxType === 'GST' && (
-            <View style={styles.taxRateContainer}>
-              <Input
-                label="GST Rate (%)"
-                value={gstRate}
-                onChangeText={setGstRate}
-                placeholder="Enter GST rate (e.g., 18)"
-                keyboardType="numeric"
-                error={errors.gstRate}
-              />
-              {gstRate && !errors.gstRate && (
-                <Text style={styles.taxBreakdown}>
-                  CGST: {(Number(gstRate) / 2).toFixed(2)}% | SGST: {(Number(gstRate) / 2).toFixed(2)}%
-                </Text>
-              )}
-            </View>
-          )}
-          
-          {taxType === 'IGST' && (
-            <View style={styles.taxRateContainer}>
-              <Input
-                label="IGST Rate (%)"
-                value={igstRate}
-                onChangeText={setIgstRate}
-                placeholder="Enter IGST rate (e.g., 18)"
-                keyboardType="numeric"
-                error={errors.igstRate}
-              />
-            </View>
-          )}
-          
-          {taxType === 'EXEMPT' && (
-            <Text style={styles.taxExemptText}>
-              This item will not have any tax applied
+          <Input
+            label="Tax Rate (%) - Optional"
+            value={taxRate}
+            onChangeText={setTaxRate}
+            placeholder="Enter tax rate (e.g., 18.00)"
+            keyboardType="numeric"
+            error={errors.taxRate}
+          />
+          {taxRate && !errors.taxRate && (
+            <Text style={styles.taxBreakdown}>
+              CGST: {(parseFloat(taxRate) / 2).toFixed(2)}% | SGST: {(parseFloat(taxRate) / 2).toFixed(2)}%
             </Text>
           )}
+          <Text style={styles.taxHelpText}>
+            If specified, this tax rate will be applied to this item instead of the bill's default tax
+          </Text>
         </Card>
         
         <Button
@@ -418,6 +353,12 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     fontStyle: 'italic',
     marginTop: 8,
+  },
+  taxHelpText: {
+    fontSize: 13,
+    color: colors.textLight,
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   inventoryRow: {
     flexDirection: 'row',

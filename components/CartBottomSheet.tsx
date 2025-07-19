@@ -57,6 +57,8 @@ interface CartBottomSheetProps {
   isCreatingBill: boolean;
   getSubtotal: () => number;
   getTotal: () => number;
+  getItemsTaxTotal?: () => number;
+  getBillTax?: () => number;
   onSelectCustomer?: (customerId: string | null, name: string, phone?: string) => void;
   onOpenCustomerModal?: () => void;
   selectedCustomerId?: string | null;
@@ -85,6 +87,8 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
   isCreatingBill,
   getSubtotal,
   getTotal,
+  getItemsTaxTotal,
+  getBillTax,
   onSelectCustomer,
   onOpenCustomerModal,
   selectedCustomerId,
@@ -312,9 +316,19 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
                   </Text>
                 </View>
                 
+                {/* Show item taxes if any */}
+                {getItemsTaxTotal && getItemsTaxTotal() > 0 && (
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Item Taxes</Text>
+                    <Text style={styles.summaryValue}>
+                      +₹{getItemsTaxTotal().toFixed(2)}
+                    </Text>
+                  </View>
+                )}
+                
                 <View style={styles.summaryRow}>
                   <View style={styles.summaryLabelWithInput}>
-                    <Text style={styles.summaryLabel}>Tax (%)</Text>
+                    <Text style={styles.summaryLabel}>Bill Tax (%)</Text>
                     <TextInput
                       style={styles.summaryInput}
                       value={tax.toString()}
@@ -329,7 +343,7 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
                     />
                   </View>
                   <Text style={styles.summaryValue}>
-                    +₹{(getSubtotal() * (tax / 100)).toFixed(2)}
+                    +₹{(getBillTax ? getBillTax() : (getSubtotal() * (tax / 100))).toFixed(2)}
                   </Text>
                 </View>
                 

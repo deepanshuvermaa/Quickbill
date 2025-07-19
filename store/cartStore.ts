@@ -29,6 +29,10 @@ interface CartState {
   
   // Computed values
   getSubtotal: () => number;
+  getSubtotalWithItemTax: () => number;
+  getItemsTaxTotal: () => number;
+  getBillTaxableAmount: () => number;
+  getBillTax: () => number;
   getTotal: () => number;
 }
 
@@ -130,17 +134,50 @@ export const useCartStore = create<CartState>((set, get) => ({
     return get().items.reduce((sum, item) => sum + item.total, 0);
   },
   
+  getSubtotalWithItemTax: () => {
+    return get().items.reduce((sum, item) => {
+      const itemTotal = item.price * item.quantity;
+      const itemTax = item.taxRate ? (itemTotal * item.taxRate / 100) : 0;
+      return sum + itemTotal + itemTax;
+    }, 0);
+  },
+  
+  getItemsTaxTotal: () => {
+    return get().items.reduce((sum, item) => {
+      const itemTotal = item.price * item.quantity;
+      const itemTax = item.taxRate ? (itemTotal * item.taxRate / 100) : 0;
+      return sum + itemTax;
+    }, 0);
+  },
+  
+  getBillTaxableAmount: () => {
+    // Only items without individual tax rates are subject to bill tax
+    return get().items.reduce((sum, item) => {
+      if (!item.taxRate) {
+        return sum + (item.price * item.quantity);
+      }
+      return sum;
+    }, 0);
+  },
+  
+  getBillTax: () => {
+    const billTaxableAmount = get().getBillTaxableAmount();
+    const taxRate = get().tax / 100;
+    return billTaxableAmount * taxRate;
+  },
+  
   getTotal: () => {
     const subtotal = get().getSubtotal();
-    const taxRate = get().tax / 100;
+    const itemsTax = get().getItemsTaxTotal();
+    const billTax = get().getBillTax();
     const discountRate = get().discount / 100;
     
-    // First add tax to subtotal
-    const subtotalWithTax = subtotal + (subtotal * taxRate);
+    // Subtotal + all taxes
+    const subtotalWithAllTaxes = subtotal + itemsTax + billTax;
     
-    // Then apply discount to the subtotal with tax
-    const discount = subtotalWithTax * discountRate;
+    // Apply discount to the total
+    const discount = subtotalWithAllTaxes * discountRate;
     
-    return subtotalWithTax - discount;
+    return subtotalWithAllTaxes - discount;
   }
 }));
