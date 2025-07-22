@@ -244,6 +244,13 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
             isGuestMode={isGuestMode}
           />
           
+          <MenuItem
+            icon={<CreditCard size={20} color={isActive('/auth/subscription') ? colors.primary : colors.text} />}
+            label="Subscription Plans"
+            isActive={isActive('/auth/subscription')}
+            onPress={() => handleNavigate('/auth/subscription')}
+          />
+          
           <View style={styles.divider} />
           
           {isGuestMode && (

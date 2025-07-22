@@ -1,0 +1,14 @@
+QuickBill Build Report
+======================
+Build Date: Tue Jul 22 15:27:19 IST 2025
+Git Branch: main
+Git Commit: 4da0aa0 Add smart build system
+APK Name: quickbill-20250722_151024.apk
+APK Size: 88M
+Node Version: v24.4.1
+Build Duration: 
+
+Features Verified:
+
+
+Build Log: /Users/mac/Desktop/quickbill/build.log

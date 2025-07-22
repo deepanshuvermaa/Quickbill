@@ -74,6 +74,7 @@ export default function BillingScreen() {
     setDiscount,
     setTax,
     setPaymentMethod,
+    setCustomerId,
     getSubtotal,
     getSubtotalWithItemTax,
     getItemsTaxTotal,
@@ -208,16 +209,7 @@ export default function BillingScreen() {
     setIsCreatingBill(true);
     
     try {
-      // Create the bill
-      const billId = await createBillFromCart();
-      setCreatedBillId(billId);
-      
-      // Increment guest bill count if in guest mode
-      if (isGuestMode) {
-        incrementGuestBillCount();
-      }
-      
-      // Handle customer - either update existing or create new
+      // Handle customer - either update existing or create new BEFORE creating the bill
       let finalCustomerId = selectedCustomerId;
       
       if (!selectedCustomerId && customerPhone.trim()) {
@@ -225,11 +217,24 @@ export default function BillingScreen() {
         const newCustomer = createCustomer({
           name: customerName.trim(),
           phone: customerPhone.trim(),
-          createdFrom: 'billing',
         });
         if (newCustomer) {
           finalCustomerId = newCustomer.id;
+          // Set the customer ID in cart so it's included in the bill
+          setCustomerId(finalCustomerId);
         }
+      } else if (selectedCustomerId) {
+        // Make sure selected customer ID is set in cart
+        setCustomerId(selectedCustomerId);
+      }
+      
+      // Create the bill with customer ID already set
+      const billId = await createBillFromCart();
+      setCreatedBillId(billId);
+      
+      // Increment guest bill count if in guest mode
+      if (isGuestMode) {
+        incrementGuestBillCount();
       }
       
       // Update customer stats if we have a customer ID
@@ -250,6 +255,7 @@ export default function BillingScreen() {
               clearCart();
               setShowCart(false);
               setSelectedCustomerId(null);
+              setCustomerId(null);
             }
           },
           { 
@@ -266,6 +272,7 @@ export default function BillingScreen() {
               clearCart();
               setShowCart(false);
               setSelectedCustomerId(null);
+              setCustomerId(null);
             }
           }
         ]
