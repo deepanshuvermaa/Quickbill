@@ -30,6 +30,9 @@ import {
   Phone,
   FileText,
   Users,
+  Save,
+  UserPlus,
+  Check,
 } from 'lucide-react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -95,13 +98,64 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [saveAsCustomer, setSaveAsCustomer] = useState(false);
+  const [customerSaved, setCustomerSaved] = useState(false);
   const translateY = useRef(new Animated.Value(screenHeight)).current;
   const lastGestureDy = useRef(0);
   const customerStore = useCustomerStore();
-  const { getCustomerById } = customerStore || {};
+  const { getCustomerById, createCustomer, getCustomerByPhone } = customerStore || {};
   
   const COLLAPSED_HEIGHT = screenHeight * 0.7;
   const FULL_HEIGHT = screenHeight - (Platform.OS === 'ios' ? 150 : 120); // Account for tab bar and safe areas
+  
+  const handleCreateBill = async () => {
+    // If save as customer is checked and customer doesn't exist
+    if (saveAsCustomer && customerName.trim() && !selectedCustomerId) {
+      try {
+        // Check if customer with this phone already exists
+        if (customerPhone && getCustomerByPhone) {
+          const existingCustomer = getCustomerByPhone(customerPhone);
+          if (existingCustomer) {
+            // Silently use existing customer
+            if (onSelectCustomer) {
+              onSelectCustomer(existingCustomer.id, existingCustomer.name, existingCustomer.phone);
+            }
+            console.log(`Using existing customer: ${existingCustomer.name}`);
+          } else if (createCustomer) {
+            // Create new customer silently
+            const newCustomer = createCustomer({
+              name: customerName.trim(),
+              phone: customerPhone || undefined,
+              email: undefined,
+              address: undefined,
+              notes: notes || undefined,
+              tags: [],
+            }, 'billing');
+            
+            // Update the selected customer
+            if (onSelectCustomer) {
+              onSelectCustomer(newCustomer.id, newCustomer.name, newCustomer.phone);
+            }
+            
+            console.log(`Customer saved successfully: ${newCustomer.name}`);
+            
+            // Show visual feedback for 2 seconds
+            setCustomerSaved(true);
+            setTimeout(() => setCustomerSaved(false), 2000);
+          }
+        }
+      } catch (error) {
+        console.error('Error saving customer:', error);
+        // Don't show error alert - continue with bill creation
+      }
+    }
+    
+    // Reset save customer flag
+    setSaveAsCustomer(false);
+    
+    // Proceed with creating the bill
+    onCreateBill();
+  };
   
   useEffect(() => {
     if (visible) {
@@ -432,6 +486,38 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
                   />
                 </View>
                 
+                {/* Save as Customer Option */}
+                {customerName.trim() && !selectedCustomerId && (
+                  <TouchableOpacity
+                    style={styles.saveCustomerOption}
+                    onPress={() => setSaveAsCustomer(!saveAsCustomer)}
+                    disabled={customerSaved}
+                  >
+                    <View style={styles.saveCustomerCheckbox}>
+                      {(saveAsCustomer || customerSaved) && (
+                        <View style={styles.checkboxChecked}>
+                          {customerSaved ? (
+                            <Check size={12} color={colors.white} />
+                          ) : (
+                            <X size={12} color={colors.white} />
+                          )}
+                        </View>
+                      )}
+                    </View>
+                    {customerSaved ? (
+                      <Check size={18} color={colors.success} style={styles.saveCustomerIcon} />
+                    ) : (
+                      <UserPlus size={18} color={colors.primary} style={styles.saveCustomerIcon} />
+                    )}
+                    <Text style={[
+                      styles.saveCustomerText,
+                      customerSaved && styles.saveCustomerTextSaved
+                    ]}>
+                      {customerSaved ? 'Customer saved!' : 'Save as customer for future use'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                
                 <View style={styles.inputContainer}>
                   <FileText size={20} color={colors.primary} style={styles.inputIcon} />
                   <TextInput
@@ -468,7 +554,7 @@ export const CartBottomSheet: React.FC<CartBottomSheetProps> = ({
             
             <Button
               title={isCreatingBill ? "Creating..." : "Create Bill"}
-              onPress={onCreateBill}
+              onPress={handleCreateBill}
               disabled={isCreatingBill || !customerName.trim()}
               style={styles.createBillButton}
             >
@@ -745,5 +831,42 @@ const styles = StyleSheet.create({
   selectCustomerIcon: {
     padding: 8,
     marginLeft: 8,
+  },
+  saveCustomerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  saveCustomerCheckbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 4,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    width: 14,
+    height: 14,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveCustomerIcon: {
+    marginRight: 6,
+  },
+  saveCustomerText: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  saveCustomerTextSaved: {
+    color: colors.success,
+    fontWeight: '600',
   },
 });

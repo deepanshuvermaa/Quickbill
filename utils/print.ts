@@ -1,6 +1,15 @@
 import { Platform, Alert, Share } from 'react-native';
 import { Bill } from '@/types';
 
+// Helper function to format time without locale issues
+const formatTime = (date: Date): string => {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+};
+
 export const printOrShareBill = async (bill: Bill) => {
   try {
     // On web, we would normally use window.print()
@@ -74,7 +83,7 @@ export const printOrShareBill = async (bill: Bill) => {
             
             <h3>${bill.invoiceNumber ? `INVOICE #${bill.invoiceNumber}` : `BILL #${bill.id.substring(0, 8)}`}</h3>
             <p>Date: ${new Date(bill.createdAt).toLocaleDateString()}</p>
-            <p>Time: ${new Date(bill.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}</p>
+            <p>Time: ${formatTime(new Date(bill.createdAt))}</p>
             
             <p>Customer: ${bill.customerName}</p>
             ${bill.customerPhone ? `<p>Phone: ${bill.customerPhone}</p>` : ''}
@@ -197,12 +206,13 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
   // Format date and time properly
   const date = new Date(bill.createdAt);
   const dateStr = date.toLocaleDateString('en-IN');
-  const timeStr = date.toLocaleTimeString('en-IN', { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Kolkata'
-  });
+  
+  // Format time manually to avoid locale issues with AM/PM
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const timeStr = `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   
   // Build header with improved formatting
   let output = '';
@@ -244,7 +254,7 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
   // Item header with better formatting
   if (format === '2inch') {
     // For 2-inch receipt (32 chars)
-    output += 'ITEM'.padEnd(14) + 'QTY'.padEnd(5) + 'RATE'.padEnd(6) + 'AMT'.padEnd(7) + '\n';
+    output += 'ITEM'.padEnd(14) + 'QTY'.padEnd(5) + 'RATE'.padEnd(7) + 'AMT'.padEnd(9) + '\n';
   } else {
     // For 3-inch receipt (48 chars)
     output += 'ITEM DESCRIPTION'.padEnd(24) + 'QTY'.padEnd(8) + 'RATE'.padEnd(8) + 'AMOUNT'.padEnd(8) + '\n';
@@ -259,10 +269,10 @@ export const generateBillText = (bill: Bill, format: '2inch' | '3inch' = '2inch'
     itemName = itemName.replace(/\s*\([^)]*\)\s*/g, ''); // Remove content in brackets
     
     if (format === '2inch') {
-      const name = truncate(itemName, 13).padEnd(14);
-      const qty = item.quantity.toString().padStart(5);
-      const price = item.price.toFixed(2).padStart(6);
-      const total = (item.price * item.quantity).toFixed(2).padStart(7);
+      const name = truncate(itemName, 13).padEnd(12);
+      const qty = item.quantity.toString().padStart(2);
+      const price = item.price.toFixed(2).padStart(5);
+      const total = (item.price * item.quantity).toFixed(2).padStart(6);
       
       output += name + qty + price + total + '\n';
     } else {

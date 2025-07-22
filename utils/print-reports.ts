@@ -274,11 +274,11 @@ export const formatInventoryReport = (data: any, format: '2inch' | '3inch' = '2i
     
     // Item details header
     if (format === '2inch') {
-      // exactly 32 chars
+      // exactly 32 chars - monospace spacing
       reportText += 'ITEM         PRICE QTY    VALUE\n';
     } else {
-      // 48 chars - more space
-      reportText += 'ITEM NAME                PRICE   QTY      VALUE\n';
+      // Tab-separated for normal fonts
+      reportText += 'Item Name\tPrice\tQty\tValue\n';
     }
     reportText += subDivider + '\n';
     
@@ -292,7 +292,7 @@ export const formatInventoryReport = (data: any, format: '2inch' | '3inch' = '2i
     // Item details
     sortedItems.forEach((item: any) => {
       if (format === '2inch') {
-        // exactly 32 chars per line
+        // exactly 32 chars per line - monospace
         const name = item.name.length > 13 ? item.name.substring(0, 12) + '.' : item.name;
         const price = item.price.toFixed(0);
         const qty = (item.stock || 0).toString();
@@ -309,28 +309,20 @@ export const formatInventoryReport = (data: any, format: '2inch' | '3inch' = '2i
         
         reportText += line + '\n';
       } else {
-        // 48 chars - more details
-        const name = item.name.length > 24 ? item.name.substring(0, 23) + '.' : item.name;
-        const price = item.price.toFixed(2);
+        // 3-inch - tab-separated for normal fonts
+        const name = item.name;
+        const price = '₹' + item.price.toFixed(2);
         const qty = (item.stock || 0).toString();
-        const value = ((item.stock || 0) * item.price).toFixed(2);
+        const value = '₹' + ((item.stock || 0) * item.price).toFixed(2);
         
-        let line = name.padEnd(25);          // 25 chars for name
-        line += price.padStart(7);           // 7 chars for price
-        line += ' ';                         // 1 space
-        line += qty.padStart(5);             // 5 chars for qty
-        line += ' ';                         // 1 space
-        line += value.padStart(9);           // 9 chars for value
-        // Total: 25 + 7 + 1 + 5 + 1 + 9 = 48 chars exactly
-        
-        reportText += line + '\n';
+        reportText += `${name}\t${price}\t${qty}\t${value}\n`;
       }
     });
     
     // Total line
     reportText += subDivider + '\n';
     const totalQty = data.totalStock || 0;
-    const totalValue = (data.totalValue || 0).toFixed(format === '2inch' ? 0 : 2);
+    const totalValue = (data.totalValue || 0).toFixed(2);
     
     if (format === '2inch') {
       // Build total line - exactly 32 chars
@@ -343,15 +335,8 @@ export const formatInventoryReport = (data: any, format: '2inch' | '3inch' = '2i
       
       reportText += totalLine + '\n';
     } else {
-      // Build total line - exactly 48 chars
-      let totalLine = 'TOTAL:'.padEnd(32);  // 32 chars (25 + 7 for item/price columns)
-      totalLine += ' ';                      // 1 space
-      totalLine += totalQty.toString().padStart(5);  // 5 chars for qty
-      totalLine += ' ';                      // 1 space  
-      totalLine += totalValue.padStart(9);   // 9 chars for value
-      // Total: 32 + 1 + 5 + 1 + 9 = 48 chars exactly
-      
-      reportText += totalLine + '\n';
+      // Tab-separated for normal fonts
+      reportText += `TOTAL:\t\t${totalQty}\t₹${totalValue}\n`;
     }
   }
   

@@ -15,13 +15,27 @@ interface User {
 
 interface Subscription {
   id: string;
-  plan: 'trial' | 'monthly' | 'quarterly' | 'yearly';
-  status: 'active' | 'expired' | 'cancelled' | 'grace_period';
+  plan: 'trial' | 'silver' | 'gold' | 'platinum' | 'monthly' | 'quarterly' | 'yearly';
+  planDisplayName?: string;
+  tierLevel?: 'silver' | 'gold' | 'platinum';
+  status: 'active' | 'expired' | 'cancelled' | 'grace_period' | 'trial';
+  isTrial?: boolean;
+  trialDaysRemaining?: number;
   startDate: number;
   endDate: number;
   gracePeriodEnd?: number;
   isInGracePeriod: boolean;
   daysRemaining: number;
+  graceDaysRemaining?: number;
+  features?: {
+    hasInventory: boolean;
+    hasTaxReports: boolean;
+    hasCustomerReports: boolean;
+    hasUserReports: boolean;
+    hasKotBilling: boolean;
+    maxUsers: number;
+  };
+  autoRenew?: boolean;
 }
 
 interface AuthState {
@@ -34,6 +48,7 @@ interface AuthState {
   isLoading: boolean;
   lastSyncTime: number | null;
   isHydrated: boolean;
+  guestBillCount: number;
   
   // Actions
   login: (email: string, password: string) => Promise<void>;
@@ -45,6 +60,8 @@ interface AuthState {
   checkSubscriptionStatus: () => Promise<void>;
   setLoading: (loading: boolean) => void;
   hasAccess: (feature: string) => boolean;
+  incrementGuestBillCount: () => void;
+  canCreateBillAsGuest: () => boolean;
 }
 
 // Real API calls using Railway backend
@@ -61,6 +78,7 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       lastSyncTime: null,
       isHydrated: false,
+      guestBillCount: 0,
       
       login: async (email: string, password: string) => {
         set({ isLoading: true });
@@ -183,7 +201,7 @@ export const useAuthStore = create<AuthState>()(
           );
           
           set({
-            subscription: response.subscription,
+            subscription: response.data || response.subscription,
             lastSyncTime: Date.now(),
           });
         } catch (error) {
@@ -214,6 +232,15 @@ export const useAuthStore = create<AuthState>()(
         // No access if not authenticated and not guest
         return false;
       },
+      
+      incrementGuestBillCount: () => {
+        set((state) => ({ guestBillCount: state.guestBillCount + 1 }));
+      },
+      
+      canCreateBillAsGuest: () => {
+        const { isGuestMode, guestBillCount } = get();
+        return !isGuestMode || guestBillCount < 50;
+      },
     }),
     {
       name: 'auth-storage',
@@ -231,6 +258,7 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
         isGuestMode: state.isGuestMode,
         lastSyncTime: state.lastSyncTime,
+        guestBillCount: state.guestBillCount,
       }),
       skipHydration: false,
     }

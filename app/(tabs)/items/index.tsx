@@ -15,13 +15,17 @@ import { useItemsStore } from '@/store/itemsStore';
 import { ItemCard } from '@/components/ItemCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/Button';
-import { Plus, Search, Package, ArrowLeft } from 'lucide-react-native';
+import { Plus, Search, Package, ArrowLeft, Lock } from 'lucide-react-native';
+import { SubscriptionGuard } from '@/components/SubscriptionGuard';
+import { useSubscriptionManager } from '@/utils/subscription-manager';
 
 export default function ItemsScreen() {
   const router = useRouter();
   const { items, deleteItem } = useItemsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const subscriptionManager = useSubscriptionManager();
+  const hasInventoryAccess = subscriptionManager.hasFeatureAccess('inventory');
   
   // Get unique categories
   const categories = Array.from(new Set(items.map(item => item.category))).filter(Boolean);
@@ -66,13 +70,22 @@ export default function ItemsScreen() {
             </TouchableOpacity>
           ),
           headerRight: () => (
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => router.push('/items/add')}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            <SubscriptionGuard 
+              feature="inventory"
+              fallback={
+                <View style={styles.lockedButton}>
+                  <Lock size={20} color={colors.gray} />
+                </View>
+              }
             >
-              <Plus size={24} color={colors.primary} />
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={() => router.push('/items/add')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Plus size={24} color={colors.primary} />
+              </TouchableOpacity>
+            </SubscriptionGuard>
           ),
         }} 
       />
@@ -141,7 +154,20 @@ export default function ItemsScreen() {
         </View>
       )}
       
-      {items.length === 0 ? (
+      {!hasInventoryAccess ? (
+        <View style={styles.upgradeBanner}>
+          <Lock size={48} color={colors.gray} style={styles.upgradeIcon} />
+          <Text style={styles.upgradeTitle}>Inventory Management</Text>
+          <Text style={styles.upgradeMessage}>
+            Upgrade to Gold or Platinum plan to manage your inventory
+          </Text>
+          <Button 
+            title="View Plans"
+            onPress={() => router.push('/auth/subscription')}
+            style={styles.upgradeButton}
+          />
+        </View>
+      ) : items.length === 0 ? (
         <EmptyState
           title="No items yet"
           message="Add your first item to start creating bills"
@@ -182,6 +208,35 @@ export default function ItemsScreen() {
 }
 
 const styles = StyleSheet.create({
+  lockedButton: {
+    padding: 8,
+    opacity: 0.5,
+  },
+  upgradeBanner: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  upgradeIcon: {
+    marginBottom: 16,
+  },
+  upgradeTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  upgradeMessage: {
+    fontSize: 16,
+    color: colors.textLight,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  upgradeButton: {
+    paddingHorizontal: 32,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,

@@ -424,7 +424,7 @@ export default function ProfitLossReportScreen() {
                   <View key={bill.id} style={styles.detailItem}>
                     <View style={styles.detailItemLeft}>
                       <Text style={styles.detailItemTitle}>
-                        Bill #{bill.id.substring(0, 8)}
+                        {bill.invoiceNumber ? `Invoice #${bill.invoiceNumber}` : `Bill #${bill.id.substring(0, 8)}`}
                       </Text>
                       <View style={styles.detailItemInfo}>
                         <Calendar size={12} color={colors.textLight} />

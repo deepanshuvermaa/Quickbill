@@ -57,8 +57,8 @@ export const generateBillWiseReport = (bills: Bill[], format: '2inch' | '3inch' 
   // Summary
   const totalSales = bills.reduce((sum, bill) => sum + bill.total, 0);
   output += `Total Bills: ${bills.length}\n`;
-  output += `Total Sales: Rs. ${totalSales.toFixed(2)}\n`;
-  output += `Average Bill: Rs. ${bills.length > 0 ? (totalSales / bills.length).toFixed(2) : '0.00'}\n\n`;
+  output += `Total Sales: ${totalSales.toFixed(2)}\n`;
+  output += `Average Bill: ${bills.length > 0 ? (totalSales / bills.length).toFixed(2) : '0.00'}\n\n`;
   
   // Payment method summary
   const paymentSummary = bills.reduce((acc, bill) => {
@@ -70,17 +70,17 @@ export const generateBillWiseReport = (bills: Bill[], format: '2inch' | '3inch' 
   output += 'SALES BY PAYMENT METHOD:\n';
   Object.entries(paymentSummary).forEach(([method, total]) => {
     const percentage = ((total / totalSales) * 100).toFixed(1);
-    output += `${method}: Rs. ${total.toFixed(2)} (${percentage}%)\n`;
+    output += `${method}: ${total.toFixed(2)} (${percentage}%)\n`;
   });
   output += '\n' + divider + '\n';
   
   // Bill details header
   if (format === '2inch') {
-    // 32 char width
+    // 32 char width - use precise spacing for monospace
     output += 'BILLNO   DATE    CUST      AMT\n';
   } else {
-    // 48 char width - more space for details
-    output += 'BILL NO      DATE       CUSTOMER           AMOUNT\n';
+    // For 3-inch, use tab-separated format for normal fonts
+    output += 'Bill No\tDate\tCustomer\tAmount\n';
   }
   output += subDivider + '\n';
   
@@ -90,30 +90,30 @@ export const generateBillWiseReport = (bills: Bill[], format: '2inch' | '3inch' 
   // Bill details
   sortedBills.forEach((bill) => {
     if (format === '2inch') {
-      // 32 char format
+      // 32 char format - precise spacing for monospace
       const billNo = (bill.invoiceNumber || bill.billNumber || bill.id.substring(0, 7)).substring(0, 7).padEnd(9);
       const date = new Date(bill.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit' }).padEnd(7);
       const customer = truncate(bill.customerName || 'Walk-in', 8).padEnd(9);
-      const amount = bill.total.toFixed(0).padStart(4);
+      const amount = bill.total.toFixed(2).padStart(6);
       
       output += billNo + date + customer + amount + '\n';
     } else {
-      // 48 char format - more details
-      const billNo = (bill.invoiceNumber || bill.billNumber || bill.id.substring(0, 10)).padEnd(13);
-      const date = new Date(bill.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' }).padEnd(11);
-      const customer = truncate(bill.customerName || 'Walk-in', 16).padEnd(17);
-      const amount = bill.total.toFixed(2).padStart(7);
+      // 3-inch format - use tabs for natural spacing with normal fonts
+      const billNo = bill.invoiceNumber || bill.billNumber || bill.id.substring(0, 10);
+      const date = new Date(bill.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: '2-digit' });
+      const customer = bill.customerName || 'Walk-in';
+      const amount = '₹' + bill.total.toFixed(2);
       
-      output += billNo + date + customer + amount + '\n';
+      output += `${billNo}\t${date}\t${customer}\t${amount}\n`;
     }
   });
   
   // Total line
   output += subDivider + '\n';
   if (format === '2inch') {
-    output += ''.padEnd(7) + 'TOTAL:' + totalSales.toFixed(0).padStart(9) + '\n';
+    output += ''.padEnd(7) + 'TOTAL:' + totalSales.toFixed(2).padStart(9) + '\n';
   } else {
-    output += ''.padEnd(24) + 'TOTAL:' + totalSales.toFixed(2).padStart(16) + '\n';
+    output += `\t\t\tTOTAL: ₹${totalSales.toFixed(2)}\n`;
   }
   output += divider + '\n';
   output += centerText('END OF REPORT', lineWidth) + '\n';
@@ -175,36 +175,36 @@ export const generateItemWiseReport = (bills: Bill[], format: '2inch' | '3inch' 
   const totalRevenue = itemsArray.reduce((sum, item) => sum + item.totalRevenue, 0);
   
   output += `Total Items Sold: ${totalItems}\n`;
-  output += `Total Revenue: Rs. ${totalRevenue.toFixed(2)}\n`;
+  output += `Total Revenue: ${totalRevenue.toFixed(2)}\n`;
   output += `Unique Products: ${itemsArray.length}\n\n`;
   output += divider + '\n';
   
   // Item details header
   if (format === '2inch') {
-    // 32 char width
+    // 32 char width - precise spacing for monospace
     output += 'ITEM NAME       QTY    REVENUE\n';
   } else {
-    // 48 char width - more space
-    output += 'ITEM NAME                   QTY      REVENUE\n';
+    // Tab-separated for normal fonts
+    output += 'Item Name\tQuantity\tRevenue\n';
   }
   output += subDivider + '\n';
   
   // Item details
   itemsArray.forEach((item) => {
     if (format === '2inch') {
-      // 32 char format
+      // 32 char format - precise spacing
       const name = truncate(item.itemName, 14).padEnd(16);
       const qty = item.quantitySold.toString().padStart(4);
-      const revenue = item.totalRevenue.toFixed(0).padStart(9);
+      const revenue = item.totalRevenue.toFixed(2).padStart(11);
       
       output += name + qty + revenue + '\n';
     } else {
-      // 48 char format - more details
-      const name = truncate(item.itemName, 26).padEnd(28);
-      const qty = item.quantitySold.toString().padStart(7);
-      const revenue = item.totalRevenue.toFixed(2).padStart(13);
+      // Tab-separated for normal fonts
+      const name = item.itemName;
+      const qty = item.quantitySold.toString();
+      const revenue = '₹' + item.totalRevenue.toFixed(2);
       
-      output += name + qty + revenue + '\n';
+      output += `${name}\t${qty}\t${revenue}\n`;
     }
   });
   
@@ -215,7 +215,11 @@ export const generateItemWiseReport = (bills: Bill[], format: '2inch' | '3inch' 
 };
 
 // Generate printable HTML report for web
-export const generatePrintableHTMLReport = (reportData: string, title: string): string => {
+export const generatePrintableHTMLReport = (reportData: string, title: string, format: '2inch' | '3inch' = '2inch'): string => {
+  // Use monospace for 2-inch, regular font for 3-inch
+  const fontFamily = format === '2inch' ? "'Courier New', monospace" : "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  const fontSize = format === '2inch' ? '12px' : '14px';
+  
   return `
     <!DOCTYPE html>
     <html>
@@ -224,10 +228,10 @@ export const generatePrintableHTMLReport = (reportData: string, title: string): 
         <meta charset="UTF-8">
         <style>
           body {
-            font-family: 'Courier New', monospace;
+            font-family: ${fontFamily};
             padding: 20px;
             margin: 0;
-            font-size: 12px;
+            font-size: ${fontSize};
             line-height: 1.4;
             max-width: 600px;
             margin: 0 auto;
@@ -289,11 +293,11 @@ export const generatePrintableHTMLReport = (reportData: string, title: string): 
 };
 
 // Share report function
-export const shareReport = async (reportContent: string, title: string): Promise<boolean> => {
+export const shareReport = async (reportContent: string, title: string, format: '2inch' | '3inch' = '2inch'): Promise<boolean> => {
   try {
     if (Platform.OS === 'web') {
       // For web, open in new window for printing
-      const htmlContent = generatePrintableHTMLReport(reportContent, title);
+      const htmlContent = generatePrintableHTMLReport(reportContent, title, format);
       const printWindow = window.open('', '_blank');
       
       if (!printWindow) {
@@ -314,7 +318,7 @@ export const shareReport = async (reportContent: string, title: string): Promise
       // For mobile, try to use Print first, then fall back to Share
       try {
         // Generate HTML for printing
-        const htmlContent = generatePrintableHTMLReport(reportContent, title);
+        const htmlContent = generatePrintableHTMLReport(reportContent, title, format);
         
         // Print to PDF
         const { uri } = await Print.printToFileAsync({
@@ -375,13 +379,13 @@ const truncate = (text: string, maxLength: number): string => {
 export const exportBillWiseReport = async (bills: Bill[], period: string, format: '2inch' | '3inch' = '2inch'): Promise<boolean> => {
   const reportContent = generateBillWiseReport(bills, format);
   const title = `Bill-wise Sales Report - ${period}`;
-  return await shareReport(reportContent, title);
+  return await shareReport(reportContent, title, format);
 };
 
 export const exportItemWiseReport = async (bills: Bill[], period: string, format: '2inch' | '3inch' = '2inch'): Promise<boolean> => {
   const reportContent = generateItemWiseReport(bills, format);
   const title = `Item-wise Sales Report - ${period}`;
-  return await shareReport(reportContent, title);
+  return await shareReport(reportContent, title, format);
 };
 
 // Generate Profit & Loss Report
@@ -493,7 +497,7 @@ export const exportProfitLossReport = async (
     }
     
     // Fall back to share functionality
-    return await shareReport(reportContent, title);
+    return await shareReport(reportContent, title, format);
   } catch (error) {
     console.error('Error in exportProfitLossReport:', error);
     Alert.alert(

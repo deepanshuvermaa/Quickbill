@@ -19,7 +19,11 @@ export const API_ENDPOINTS = {
     STATUS: `${API_BASE_URL}/subscriptions/status`,
     CREATE_ORDER: `${API_BASE_URL}/subscriptions/create-order`,
     VERIFY_PAYMENT: `${API_BASE_URL}/subscriptions/verify-payment`,
+    SUBMIT_REFERENCE: `${API_BASE_URL}/subscriptions/submit-payment-reference`,
     CANCEL: `${API_BASE_URL}/subscriptions/cancel`,
+    CHECK_FEATURE: `${API_BASE_URL}/subscriptions/check-feature`,
+    GRACE_NOTIFICATIONS: `${API_BASE_URL}/subscriptions/grace-notifications`,
+    ACKNOWLEDGE_NOTIFICATION: `${API_BASE_URL}/subscriptions/acknowledge-grace-notification`,
   },
   
   // Usage endpoints

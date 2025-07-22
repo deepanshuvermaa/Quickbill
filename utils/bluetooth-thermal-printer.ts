@@ -238,8 +238,15 @@ export class BluetoothThermalPrinter {
       await this.write('--------------------------------\n');
       await this.write('Test print successful\n');
       await this.write('--------------------------------\n');
-      await this.write(`Date: ${new Date().toLocaleDateString()}\n`);
-      await this.write(`Time: ${new Date().toLocaleTimeString()}\n`);
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      const timeStr = `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+      
+      await this.write(`Date: ${now.toLocaleDateString()}\n`);
+      await this.write(`Time: ${timeStr}\n`);
       await this.write('\n\n\n');
       await this.write(Commands.CUT_PAPER);
     } catch (error) {

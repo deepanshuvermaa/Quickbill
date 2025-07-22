@@ -18,6 +18,8 @@ export default function AddItemScreen() {
   const [description, setDescription] = useState('');
   const [stock, setStock] = useState('');
   const [unit, setUnit] = useState('');
+  const [hsnCode, setHsnCode] = useState('');
+  const [taxRate, setTaxRate] = useState('');
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -38,6 +40,16 @@ export default function AddItemScreen() {
       newErrors.stock = 'Stock must be a non-negative number';
     }
     
+    // Validate tax rate
+    if (taxRate.trim()) {
+      const taxValue = parseFloat(taxRate);
+      if (isNaN(taxValue) || taxValue < 0 || taxValue > 100) {
+        newErrors.taxRate = 'Tax rate must be between 0 and 100';
+      } else if (taxRate.includes('.') && taxRate.split('.')[1].length > 2) {
+        newErrors.taxRate = 'Tax rate can have maximum 2 decimal places';
+      }
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -54,6 +66,8 @@ export default function AddItemScreen() {
         description: description.trim(),
         stock: stock.trim() ? Number(stock) : undefined,
         unit: unit.trim(),
+        hsnCode: hsnCode.trim() || undefined,
+        taxRate: taxRate.trim() ? parseFloat(taxRate) : undefined,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });
@@ -137,6 +151,32 @@ export default function AddItemScreen() {
               />
             </View>
           </View>
+          
+          <Input
+            label="HSN Code (Optional)"
+            value={hsnCode}
+            onChangeText={setHsnCode}
+            placeholder="Enter HSN code"
+            autoCapitalize="characters"
+          />
+        </Card>
+        
+        <Card style={styles.inventoryCard}>
+          <Text style={styles.sectionTitle}>Tax Configuration</Text>
+          
+          <Input
+            label="Tax Rate (%) - Optional"
+            value={taxRate}
+            onChangeText={setTaxRate}
+            placeholder="Enter tax rate (e.g., 18)"
+            keyboardType="numeric"
+            error={errors.taxRate}
+          />
+          {taxRate && !errors.taxRate && (
+            <Text style={styles.taxBreakdown}>
+              CGST: {(parseFloat(taxRate) / 2).toFixed(2)}% | SGST: {(parseFloat(taxRate) / 2).toFixed(2)}%
+            </Text>
+          )}
         </Card>
       </ScrollView>
       
@@ -201,5 +241,11 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     flex: 2,
+  },
+  taxBreakdown: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 4,
+    marginLeft: 2,
   },
 });

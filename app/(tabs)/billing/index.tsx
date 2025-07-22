@@ -43,6 +43,7 @@ import { useBillsStore } from '@/store/billsStore';
 import { useHamburgerMenu } from '../../_layout';
 import { useCustomerStore } from '@/store/customerStore';
 import { CustomerSelectionModal } from '@/components/CustomerSelectionModal';
+import { useAuthStore } from '@/store/authStore';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 380;
@@ -50,6 +51,7 @@ const isSmallScreen = width < 380;
 export default function BillingScreen() {
   const router = useRouter();
   const { toggleMenu } = useHamburgerMenu();
+  const { isGuestMode, guestBillCount, canCreateBillAsGuest, incrementGuestBillCount } = useAuthStore();
   const { items, initializeWithMockData, checkStockAvailability } = useItemsStore();
   const { bills, getBillById, deleteBill } = useBillsStore();
   const { primaryPrinter, setPrimaryPrinter, taxConfig, defaultTaxRate } = useSettingsStore();
@@ -190,12 +192,30 @@ export default function BillingScreen() {
       return;
     }
     
+    // Check guest bill limit
+    if (isGuestMode && !canCreateBillAsGuest()) {
+      Alert.alert(
+        "Guest Limit Reached",
+        "You have reached the 50 bill limit for guest users. Please sign up for a free account to continue.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Sign Up", onPress: () => router.push('/auth/register') }
+        ]
+      );
+      return;
+    }
+    
     setIsCreatingBill(true);
     
     try {
       // Create the bill
       const billId = await createBillFromCart();
       setCreatedBillId(billId);
+      
+      // Increment guest bill count if in guest mode
+      if (isGuestMode) {
+        incrementGuestBillCount();
+      }
       
       // Handle customer - either update existing or create new
       let finalCustomerId = selectedCustomerId;

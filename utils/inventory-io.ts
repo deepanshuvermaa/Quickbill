@@ -41,11 +41,11 @@ export const generateInventoryReport = (items: Item[]): string => {
     month: 'numeric', 
     year: '2-digit' 
   });
-  const timeStr = now.toLocaleTimeString('en-IN', { 
-    hour: '2-digit', 
-    minute: '2-digit', 
-    hour12: true 
-  }).toUpperCase();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const timeStr = `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
   
   output += `Generated: ${dateStr} ${timeStr}\n`;
   output += divider + '\n';

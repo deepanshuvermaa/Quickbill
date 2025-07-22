@@ -7,21 +7,26 @@ import { User, Lock, LogIn } from 'lucide-react-native';
 
 export const GuestBanner = () => {
   const router = useRouter();
-  const { isGuestMode, isAuthenticated, user } = useAuthStore();
+  const { isGuestMode, isAuthenticated, user, guestBillCount } = useAuthStore();
   
   // Debug: console.log('GuestBanner render:', { isGuestMode, isAuthenticated });
   
   if (!isGuestMode) return null;
   
+  const billsRemaining = Math.max(0, 50 - guestBillCount);
+  
   return (
-    <View style={styles.banner}>
+    <View style={[styles.banner, billsRemaining === 0 && styles.bannerError]}>
       <View style={styles.content}>
         <View style={styles.info}>
-          <User size={20} color={colors.warning} />
+          <User size={20} color={billsRemaining === 0 ? colors.danger : colors.warning} />
           <View style={styles.textContainer}>
-            <Text style={styles.title}>Guest Mode</Text>
+            <Text style={[styles.title, billsRemaining === 0 && styles.titleError]}>Guest Mode</Text>
             <Text style={styles.message}>
-              You're using limited features. Login for full access.
+              {billsRemaining > 0 
+                ? `${billsRemaining} bills remaining. Login for unlimited access.`
+                : `Bill limit reached. Login to continue.`
+              }
             </Text>
           </View>
         </View>
@@ -68,6 +73,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.warning + '40',
   },
+  bannerError: {
+    backgroundColor: colors.danger + '15',
+    borderColor: colors.danger + '40',
+  },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -88,6 +97,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.warning,
     marginBottom: 2,
+  },
+  titleError: {
+    color: colors.danger,
   },
   message: {
     fontSize: 12,

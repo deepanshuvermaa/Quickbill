@@ -36,7 +36,7 @@
         "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION"
       ],
-      "package": "com.quickbill.pos.release",
+      "package": "com.quickbill.pos",
       "versionCode": 2
     },
     "plugins": [

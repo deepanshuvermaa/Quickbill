@@ -1,57 +1,69 @@
 #!/bin/bash
 
-# QuickBill Complete Clean Script
-# This script ensures all caches are cleared before building
+# QuickBill Deep Clean Script
+# Removes all caches and build artifacts
 
-echo "🧹 QuickBill Complete Clean Script"
-echo "=================================="
+echo "🧹 QuickBill Deep Clean Script"
+echo "This will remove all caches and build artifacts"
+echo "Press Ctrl+C to cancel, or wait 3 seconds to continue..."
+sleep 3
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Get the project root directory
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_ROOT"
 
-# Clean React Native caches
-echo -e "\n${YELLOW}Cleaning React Native caches...${NC}"
-rm -rf $TMPDIR/metro-*
-rm -rf $TMPDIR/haste-*
-rm -rf $TMPDIR/react-*
-rm -rf node_modules/.cache
+echo "📍 Working in: $PROJECT_ROOT"
 
-# Clean watchman
-echo -e "\n${YELLOW}Cleaning Watchman...${NC}"
-watchman watch-del-all 2>/dev/null || echo "Watchman not installed"
+# Kill processes
+echo "🔪 Killing Metro bundler..."
+pkill -f metro || true
 
-# Clean node modules (optional, uncomment if needed)
-# echo -e "\n${YELLOW}Cleaning node_modules...${NC}"
-# rm -rf node_modules
-# npm install
-
-# Clean Android build
-echo -e "\n${YELLOW}Cleaning Android build...${NC}"
-cd android
-./gradlew clean
-rm -rf .gradle
-rm -rf app/build
-rm -rf build
-
-# Remove old bundles
-echo -e "\n${YELLOW}Removing old JavaScript bundles...${NC}"
-rm -f app/src/main/assets/index.android.bundle
-rm -f app/src/main/assets/index.android.bundle.map
-
+echo "🔪 Killing Gradle daemons..."
+cd android && ./gradlew --stop || true
 cd ..
 
-# Clean iOS build (if exists)
-if [ -d "ios" ]; then
-    echo -e "\n${YELLOW}Cleaning iOS build...${NC}"
-    cd ios
-    rm -rf build
-    rm -rf Pods
-    rm -rf ~/Library/Developer/Xcode/DerivedData
-    cd ..
+# Clean caches
+echo "🗑️  Removing Metro cache..."
+rm -rf "$TMPDIR/metro-*" 2>/dev/null || true
+rm -rf "$TMPDIR/haste-*" 2>/dev/null || true
+rm -rf "$TMPDIR/react-*" 2>/dev/null || true
+
+echo "🗑️  Removing React Native cache..."
+rm -rf ~/Library/Caches/com.facebook.ReactNativeBuild 2>/dev/null || true
+
+echo "🗑️  Removing Gradle caches..."
+rm -rf ~/.gradle/caches/build-cache-* 2>/dev/null || true
+rm -rf ~/.gradle/caches/transforms-* 2>/dev/null || true
+rm -rf ~/.gradle/caches/jars-* 2>/dev/null || true
+
+echo "🗑️  Removing Android build directories..."
+rm -rf android/app/build 2>/dev/null || true
+rm -rf android/build 2>/dev/null || true
+rm -rf android/.gradle 2>/dev/null || true
+rm -rf android/app/.cxx 2>/dev/null || true
+rm -rf android/.kotlin 2>/dev/null || true
+
+echo "🗑️  Removing iOS build directories..."
+rm -rf ios/build 2>/dev/null || true
+rm -rf ios/Pods 2>/dev/null || true
+
+echo "🗑️  Removing node_modules cache..."
+rm -rf node_modules/.cache 2>/dev/null || true
+
+echo "🗑️  Removing Expo cache..."
+rm -rf .expo 2>/dev/null || true
+
+echo "🗑️  Clearing watchman..."
+if command -v watchman &> /dev/null; then
+    watchman watch-del-all 2>/dev/null || true
 fi
 
-echo -e "\n${GREEN}✅ All caches cleaned successfully!${NC}"
-echo -e "${YELLOW}You can now run ./build-release.sh to create a fresh build.${NC}"
+echo "🗑️  Clearing npm cache..."
+npm cache clean --force 2>/dev/null || true
+
+echo "✅ Deep clean completed!"
+echo ""
+echo "Next steps:"
+echo "1. Run: npm install"
+echo "2. Run: cd ios && pod install (for iOS)"
+echo "3. Run: npm run build:release (or ./scripts/build-release.sh)"

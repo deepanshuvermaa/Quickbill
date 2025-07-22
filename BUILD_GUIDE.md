@@ -1,169 +1,177 @@
 # QuickBill Build Guide
 
+## 🚨 Important: Ensuring Latest Code in Builds
+
+This guide ensures your builds ALWAYS contain the latest code changes.
+
 ## Quick Build Commands
 
-### For Release Build:
+### For Release Build with Latest Code:
 ```bash
-./scripts/build-android-release.sh
+./scripts/build-release.sh
 ```
 
-### To Verify Build:
+### For Complete Clean:
 ```bash
-./scripts/verify-build.sh
+./scripts/clean-all.sh
 ```
 
 ## Manual Build Process
 
-If automated scripts fail, follow these steps:
+If scripts don't work, follow these steps:
 
 ### 1. Clean Everything
 ```bash
-cd android && ./gradlew clean && cd ..
-rm -rf android/app/build
-rm -rf android/.gradle
-rm -rf node_modules/.cache
+# Kill Metro
+pkill -f metro
+
+# Clean caches
 rm -rf $TMPDIR/metro-*
+rm -rf ~/Library/Caches/com.facebook.ReactNativeBuild
+rm -rf android/app/build android/build android/.gradle android/app/.cxx
+
+# Clean npm cache
+npm cache clean --force
 ```
 
-### 2. Prepare Environment
+### 2. Generate Fresh Bundle
 ```bash
-# Create assets directory
-mkdir -p android/app/src/main/assets
+# Set environment
+export NODE_ENV=production
 
-# Clear and restart Metro
-npx react-native start --reset-cache &
-sleep 5 && pkill -f metro
+# Create bundle
+mkdir -p android/app/src/main/assets/
+npx react-native bundle \
+    --platform android \
+    --dev false \
+    --entry-file node_modules/expo-router/entry.js \
+    --bundle-output android/app/src/main/assets/index.android.bundle \
+    --assets-dest android/app/src/main/res \
+    --reset-cache
 ```
 
-### 3. Generate Native Code
+### 3. Verify Bundle Contains Your Changes
 ```bash
-npx expo prebuild --platform android --clear
+# Check if bundle has your features
+grep "HSN Code" android/app/src/main/assets/index.android.bundle
+# Should return matches if HSN code feature is included
 ```
 
-### 4. Bundle JavaScript (CRITICAL STEP)
-```bash
-NODE_ENV=production npx react-native bundle \
-  --platform android \
-  --dev false \
-  --entry-file index.js \
-  --bundle-output android/app/src/main/assets/index.android.bundle \
-  --assets-dest android/app/src/main/res \
-  --reset-cache
-```
-
-### 5. Build APK
+### 4. Build APK
 ```bash
 cd android
-./gradlew assembleRelease
+NODE_ENV=production ./gradlew assembleRelease
 ```
 
-## Common Issues and Solutions
+## Common Issues & Solutions
 
-### Issue: "App not installed - package invalid"
+### Issue: Changes Not Appearing in Built App
+
+**Symptoms:**
+- New features missing in APK
+- Old code running instead of new code
+
+**Solutions:**
+1. Run `./scripts/clean-all.sh`
+2. Delete `node_modules` and reinstall: `rm -rf node_modules && npm install`
+3. Ensure no Metro bundler is running: `pkill -f metro`
+4. Check you're on the correct git branch: `git branch`
+
+### Issue: Build Fails with CMake Errors
+
 **Solution:**
-1. Increment `versionCode` in `android/app/build.gradle`
-2. Uninstall old app: `adb uninstall com.quickbill.pos`
-3. Clear package installer cache on device
+```bash
+rm -rf android/app/.cxx
+rm -rf android/app/build/generated
+```
 
-### Issue: Changes not appearing in APK
+### Issue: Metro Cache Not Clearing
+
 **Solution:**
-1. JavaScript bundle not updated. Always run step 4 above
-2. Verify with: `./scripts/verify-build.sh`
-3. Check bundle date: `stat android/app/src/main/assets/index.android.bundle`
-
-### Issue: Build fails with vector icons error
-**Solution:**
-Metro config already excludes problematic files. If persists:
 ```bash
-find . -name "MainNavigator.tsx" -delete
+# Force clear all Metro caches
+rm -rf $TMPDIR/metro-*
+rm -rf $TMPDIR/haste-*
+rm -rf $TMPDIR/react-*
+npx expo start -c
 ```
 
-### Issue: Version downgrade error
-**Solution:**
-Always increment `versionCode` in `build.gradle`:
-```gradle
-versionCode 6  // Increment this
-versionName "1.0.3"  // Update this
-```
+## Build Configuration
 
-## Build Checklist
+### Key Files:
+- `metro.config.js` - Metro bundler configuration (cache reset enabled)
+- `android/app/build.gradle` - Android build settings
+- `app.json` - Expo configuration
 
-Before releasing:
-- [ ] Clean all caches
-- [ ] Increment version numbers
-- [ ] Run automated build script
-- [ ] Verify build contains changes
-- [ ] Test on device
-- [ ] Document any issues
-
-## Version Management
-
-Current versions:
-- versionCode: 5
-- versionName: "1.0.2"
-
-Always increment `versionCode` for each build!
-
-## Signing Configuration
-
-Release builds use debug keystore by default. For production:
-1. Create `android/keystore.properties`
-2. Follow `android/keystore-setup.md`
-
-## Environment Variables
-
-Set these for production builds:
+### Environment Variables:
 ```bash
-export NODE_ENV=production
-export EXPO_NO_CACHE=1
+NODE_ENV=production  # For release builds
 ```
 
-## Testing the APK
+## Verification Steps
 
-1. Find APK: `ls -la android/app/build/outputs/apk/release/`
-2. Install: `adb install -r <apk-path>`
-3. Or use: `npx react-native run-android --mode release`
+After building, always verify:
 
-## Troubleshooting
+1. **Check APK exists:**
+   ```bash
+   ls -la android/app/build/outputs/apk/release/
+   ```
 
-Run diagnostics:
+2. **Install and test:**
+   ```bash
+   adb install -r android/app/build/outputs/apk/release/quickbill-*.apk
+   ```
+
+3. **Check features:**
+   - Open app
+   - Go to Add Item → Look for HSN Code field
+   - Go to Settings → Printer Settings → Check paper size options
+   - Add item with tax → Verify tax calculations
+
+## Best Practices
+
+1. **Always clean before release builds**
+2. **Verify bundle contains your features**
+3. **Test on real device after building**
+4. **Commit all changes before building**
+5. **Use the build scripts provided**
+
+## Build Scripts
+
+### `scripts/build-release.sh`
+- Cleans all caches
+- Verifies source files
+- Generates fresh bundle
+- Builds release APK
+- Validates output
+
+### `scripts/clean-all.sh`
+- Removes ALL caches
+- Cleans build directories
+- Kills running processes
+- Prepares for fresh build
+
+## Troubleshooting Checklist
+
+- [ ] All changes committed? (`git status`)
+- [ ] Metro bundler killed? (`pkill -f metro`)
+- [ ] Caches cleared? (`./scripts/clean-all.sh`)
+- [ ] Bundle regenerated? (Check file date)
+- [ ] APK rebuilt? (Check APK date)
+- [ ] Features visible in app? (Manual test)
+
+## Emergency Reset
+
+If nothing else works:
 ```bash
-# Check React Native environment
-npx react-native doctor
-
-# Check Expo setup
-npx expo doctor
-
-# Verify file changes
-grep -n "hsnCode" types/index.ts
-grep -n "taxRate" types/index.ts
+# Complete reset
+./scripts/clean-all.sh
+rm -rf node_modules
+npm install
+cd ios && pod install && cd ..
+./scripts/build-release.sh
 ```
 
-## Build Artifacts
+---
 
-Builds are saved to:
-- APK: `android/app/build/outputs/apk/release/`
-- Copied to: `builds/`
-
-## Important Notes
-
-1. **Always bundle JavaScript manually** for release builds
-2. **Clean build** when switching between debug/release
-3. **Verify builds** before distribution
-4. **Keep version numbers** incrementing
-
-## Quick Commands Reference
-
-```bash
-# Full clean build
-./scripts/build-android-release.sh
-
-# Verify build
-./scripts/verify-build.sh
-
-# Install on device
-adb install -r builds/quickbill-*.apk
-
-# Check installed version
-adb shell dumpsys package com.quickbill.pos | grep version
-```
+**Remember:** The key to ensuring latest code is included is to ALWAYS clear caches and regenerate the JavaScript bundle before building!

@@ -7,14 +7,10 @@ const config = getDefaultConfig(__dirname);
 // Fix for React Native 0.73+ compatibility
 config.resolver = {
   ...config.resolver,
-  // Add any problematic modules to be ignored
-  blockList: [
-    /navigation\/MainNavigator\.tsx/,
-    /navigation\/RootNavigator\.tsx/,
-    /navigation\/AuthNavigator\.tsx/
-  ],
   // Ensure proper module resolution
   nodeModulesPaths: ['./node_modules'],
+  // Force fresh resolution
+  resetCache: true,
 };
 
 // Ensure proper asset handling
