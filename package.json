@@ -8,7 +8,12 @@
     "start-web-dev": "DEBUG=expo* expo start --web --tunnel",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "prebuild": "./scripts/pre-build-checklist.sh",
+    "build": "./scripts/smart-build-release.sh",
+    "build:check": "./scripts/pre-build-checklist.sh",
+    "build:release": "./scripts/smart-build-release.sh",
+    "build:force": "./scripts/force-build-release.sh"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
