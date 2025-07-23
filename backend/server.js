@@ -15,7 +15,33 @@ const PORT = process.env.PORT || 3000;
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuration - allow GitHub Pages and local development
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://deepanshuvermaa.github.io',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5500', // Live Server
+      'null' // For file:// protocol
+    ];
+    
+    // Allow requests with no origin (like mobile apps)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for now
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
