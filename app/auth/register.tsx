@@ -93,7 +93,7 @@ export default function RegisterScreen() {
       
       Alert.alert(
         'Registration Successful',
-        'Your 30-day free trial has started! Please check your email to verify your account.',
+        'Your 7-day free trial has started! Please check your email to verify your account.',
         [
           {
             text: 'OK',
@@ -131,7 +131,7 @@ export default function RegisterScreen() {
         >
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Start your 30-day free trial</Text>
+            <Text style={styles.subtitle}>Start your 7-day free trial</Text>
           </View>
           
           <View style={styles.form}>
@@ -251,7 +251,7 @@ export default function RegisterScreen() {
             {errors.terms && <Text style={styles.errorText}>{errors.terms}</Text>}
             
             <View style={styles.trialInfo}>
-              <Text style={styles.trialText}>✓ 30-day free trial</Text>
+              <Text style={styles.trialText}>✓ 7-day free trial with all Platinum features</Text>
               <Text style={styles.trialText}>✓ No credit card required</Text>
               <Text style={styles.trialText}>✓ Cancel anytime</Text>
             </View>
