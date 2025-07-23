@@ -75,12 +75,12 @@ router.post('/register', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Create trial subscription
+    // Create 7-day trial subscription with platinum features
     const subscriptionResult = await pool.query(
-      `INSERT INTO user_subscriptions (user_id, plan, status, start_date, end_date, created_at, updated_at)
-       VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '30 days', NOW(), NOW())
-       RETURNING id, plan, status, start_date, end_date`,
-      [user.id, 'trial', 'active']
+      `INSERT INTO user_subscriptions (user_id, plan, status, start_date, end_date, is_trial, created_at, updated_at)
+       VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '7 days', true, NOW(), NOW())
+       RETURNING id, plan, status, start_date, end_date, is_trial`,
+      [user.id, 'platinum', 'active']
     );
 
     const subscription = subscriptionResult.rows[0];
@@ -172,7 +172,7 @@ router.post('/login', async (req, res) => {
 
     // Get active subscription
     const subscriptionResult = await pool.query(
-      `SELECT id, plan, status, start_date, end_date, grace_period_end
+      `SELECT id, plan, status, start_date, end_date, grace_period_end, is_trial
        FROM user_subscriptions 
        WHERE user_id = $1 AND status IN ('active', 'expired')
        ORDER BY created_at DESC
@@ -195,7 +195,9 @@ router.post('/login', async (req, res) => {
         endDate: sub.end_date,
         gracePeriodEnd: sub.grace_period_end,
         isInGracePeriod: sub.grace_period_end && new Date() <= new Date(sub.grace_period_end),
-        daysRemaining: Math.max(0, daysRemaining)
+        daysRemaining: Math.max(0, daysRemaining),
+        isTrial: sub.is_trial || false,
+        trialDaysRemaining: sub.is_trial ? Math.max(0, daysRemaining) : 0
       };
     }
 

@@ -7,6 +7,7 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const subscriptionRoutes = require('./routes/subscriptions-v2');
+const subscriptionSimpleRoutes = require('./routes/subscriptions-simple');
 const usageRoutes = require('./routes/usage');
 const adminRoutes = require('./routes/admin');
 
@@ -70,6 +71,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/subscriptions-simple', subscriptionSimpleRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/admin', adminRoutes);
 
