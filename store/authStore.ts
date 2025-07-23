@@ -159,6 +159,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
           isGuestMode: false,
+          guestBillCount: 0, // Reset guest bill count on logout
           lastSyncTime: null,
         });
       },
@@ -219,15 +220,8 @@ export const useAuthStore = create<AuthState>()(
         // If user is authenticated, they have access to everything
         if (isAuthenticated) return true;
         
-        // If in guest mode, only allow specific features
-        if (isGuestMode) {
-          const allowedGuestFeatures = [
-            'dashboard',
-            'billing',
-            'items_view', // Can view items but not add/edit
-          ];
-          return allowedGuestFeatures.includes(feature);
-        }
+        // If in guest mode, allow access to all features (with 50 bill limit enforced separately)
+        if (isGuestMode) return true;
         
         // No access if not authenticated and not guest
         return false;

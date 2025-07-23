@@ -76,12 +76,23 @@ router.post('/register', async (req, res) => {
     const user = userResult.rows[0];
 
     // Create 7-day trial subscription with platinum features
-    const subscriptionResult = await pool.query(
-      `INSERT INTO user_subscriptions (user_id, plan, status, start_date, end_date, is_trial, created_at, updated_at)
-       VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '7 days', true, NOW(), NOW())
-       RETURNING id, plan, status, start_date, end_date, is_trial`,
-      [user.id, 'platinum', 'active']
+    // First check if is_trial column exists
+    const columnCheck = await pool.query(
+      `SELECT column_name FROM information_schema.columns 
+       WHERE table_name = 'user_subscriptions' AND column_name = 'is_trial'`
     );
+    
+    const hasIsTrialColumn = columnCheck.rows.length > 0;
+    
+    const subscriptionQuery = hasIsTrialColumn
+      ? `INSERT INTO user_subscriptions (user_id, plan, status, start_date, end_date, is_trial, created_at, updated_at)
+         VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '7 days', true, NOW(), NOW())
+         RETURNING id, plan, status, start_date, end_date, is_trial`
+      : `INSERT INTO user_subscriptions (user_id, plan, status, start_date, end_date, created_at, updated_at)
+         VALUES ($1, $2, $3, NOW(), NOW() + INTERVAL '7 days', NOW(), NOW())
+         RETURNING id, plan, status, start_date, end_date`;
+    
+    const subscriptionResult = await pool.query(subscriptionQuery, [user.id, 'platinum', 'active']);
 
     const subscription = subscriptionResult.rows[0];
 
@@ -171,14 +182,27 @@ router.post('/login', async (req, res) => {
     }
 
     // Get active subscription
-    const subscriptionResult = await pool.query(
-      `SELECT id, plan, status, start_date, end_date, grace_period_end, is_trial
-       FROM user_subscriptions 
-       WHERE user_id = $1 AND status IN ('active', 'expired')
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [user.id]
+    // First check if is_trial column exists
+    const columnCheck = await pool.query(
+      `SELECT column_name FROM information_schema.columns 
+       WHERE table_name = 'user_subscriptions' AND column_name = 'is_trial'`
     );
+    
+    const hasIsTrialColumn = columnCheck.rows.length > 0;
+    
+    const subscriptionQuery = hasIsTrialColumn
+      ? `SELECT id, plan, status, start_date, end_date, grace_period_end, is_trial
+         FROM user_subscriptions 
+         WHERE user_id = $1 AND status IN ('active', 'expired')
+         ORDER BY created_at DESC
+         LIMIT 1`
+      : `SELECT id, plan, status, start_date, end_date, grace_period_end, false as is_trial
+         FROM user_subscriptions 
+         WHERE user_id = $1 AND status IN ('active', 'expired')
+         ORDER BY created_at DESC
+         LIMIT 1`;
+    
+    const subscriptionResult = await pool.query(subscriptionQuery, [user.id]);
 
     let subscription = null;
     if (subscriptionResult.rows.length > 0) {
