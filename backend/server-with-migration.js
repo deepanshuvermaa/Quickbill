@@ -6,15 +6,40 @@ const { runMigrations } = require('./migrate');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
-const subscriptionRoutes = require('./routes/subscriptions');
+const subscriptionRoutes = require('./routes/subscriptions-v2');
+const subscriptionSimpleRoutes = require('./routes/subscriptions-simple');
 const usageRoutes = require('./routes/usage');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS configuration - allow GitHub Pages and local development
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://deepanshuvermaa.github.io',
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'http://127.0.0.1:5500',
+      'null'
+    ];
+    
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for now
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -29,6 +54,10 @@ app.use(limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files for admin panel
+const path = require('path');
+app.use('/admin', express.static(path.join(__dirname, 'public')));
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
@@ -41,7 +70,10 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/subscriptions-simple', subscriptionSimpleRoutes);
 app.use('/api/usage', usageRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin/subscriptions', require('./routes/admin-subscription-management'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
