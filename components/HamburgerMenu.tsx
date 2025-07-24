@@ -12,6 +12,7 @@ import {
 import { useRouter, usePathname } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/store/authStore';
+import { navigateToSubscription } from '@/utils/subscription-navigation';
 import {
   Home,
   ShoppingCart,
@@ -248,7 +249,10 @@ export const HamburgerMenu = ({ isVisible, onClose }: HamburgerMenuProps) => {
             icon={<CreditCard size={20} color={isActive('/auth/subscription') ? colors.primary : colors.text} />}
             label="Subscription Plans"
             isActive={isActive('/auth/subscription')}
-            onPress={() => handleNavigate('/auth/subscription')}
+            onPress={() => {
+              onClose();
+              navigateToSubscription();
+            }}
           />
           
           <View style={styles.divider} />

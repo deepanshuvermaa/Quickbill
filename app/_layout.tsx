@@ -95,9 +95,10 @@ export default function RootLayout() {
             }}
           />
           <Stack.Screen
-            name="auth/subscription"
+            name="subscription"
             options={{
               headerTitle: 'Subscription Plans',
+              headerBackVisible: true,
             }}
           />
           <Stack.Screen

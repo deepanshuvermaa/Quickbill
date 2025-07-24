@@ -1,5 +1,5 @@
 // API Configuration for QuickBill POS
-const isDevelopment = __DEV__;
+const isDevelopment = typeof __DEV__ !== 'undefined' ? __DEV__ : false;
 
 // Railway Backend URL
 const API_BASE_URL = 'https://quickbill-production.up.railway.app/api';
@@ -20,6 +20,9 @@ export const API_ENDPOINTS = {
     CREATE_ORDER: `${API_BASE_URL}/subscriptions/create-order`,
     VERIFY_PAYMENT: `${API_BASE_URL}/subscriptions/verify-payment`,
     SUBMIT_REFERENCE: `${API_BASE_URL}/subscriptions/submit-payment-reference`,
+    SUBMIT_PAYMENT_SIMPLE: `${API_BASE_URL}/subscriptions-simple/submit-payment-simple`,
+    PENDING_PAYMENTS: `${API_BASE_URL}/subscriptions-simple/pending-payments`,
+    VERIFY_PAYMENT_ADMIN: `${API_BASE_URL}/subscriptions-simple/verify-payment`,
     CANCEL: `${API_BASE_URL}/subscriptions/cancel`,
     CHECK_FEATURE: `${API_BASE_URL}/subscriptions/check-feature`,
     GRACE_NOTIFICATIONS: `${API_BASE_URL}/subscriptions/grace-notifications`,

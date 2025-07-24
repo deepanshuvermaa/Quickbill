@@ -36,32 +36,35 @@ export function AuthGuard({ children }: AuthGuardProps) {
     
     const inAuthGroup = segments[0] === 'auth';
     
+    // Debug logging
+    console.log('[AuthGuard] Navigation check:', {
+      isAuthenticated,
+      isGuestMode,
+      inAuthGroup,
+      segments,
+      subscriptionStatus: subscription?.status
+    });
+    
     // If user is not authenticated and not in guest mode -> show login
     if (!isAuthenticated && !isGuestMode && !inAuthGroup) {
+      console.log('[AuthGuard] Redirecting to login - not authenticated');
       router.replace('/auth/login');
       return;
     }
     
     // If user is authenticated (not guest) and on auth screens -> redirect to app
-    if (isAuthenticated && inAuthGroup) {
+    if (isAuthenticated && !isGuestMode && inAuthGroup) {
+      console.log('[AuthGuard] Redirecting authenticated user away from auth screens');
       router.replace('/(tabs)');
       return;
     }
     
     // If user is in guest mode and on auth screens, allow them to stay (they want to login)
     if (isGuestMode && inAuthGroup) {
-      // Let them access auth screens to login
+      console.log('[AuthGuard] Allowing guest to access auth screens');
       return;
     }
-    
-    // Check subscription status for authenticated users
-    if (isAuthenticated && subscription) {
-      if (subscription.status === 'expired' && !subscription.isInGracePeriod) {
-        router.replace('/auth/subscription');
-        return;
-      }
-    }
-  }, [isAuthenticated, isGuestMode, segments, isChecking, subscription]);
+  }, [isAuthenticated, isGuestMode, segments, isChecking]);
   
   if (!isHydrated || isChecking) {
     return (

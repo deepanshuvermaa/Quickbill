@@ -193,13 +193,15 @@ router.post('/login', async (req, res) => {
     const subscriptionQuery = hasIsTrialColumn
       ? `SELECT id, plan, status, start_date, end_date, grace_period_end, is_trial
          FROM user_subscriptions 
-         WHERE user_id = $1 AND status IN ('active', 'expired')
-         ORDER BY created_at DESC
+         WHERE user_id = $1 
+         AND (status IN ('active', 'expired', 'trial', 'grace_period') OR end_date > NOW())
+         ORDER BY end_date DESC
          LIMIT 1`
       : `SELECT id, plan, status, start_date, end_date, grace_period_end, false as is_trial
          FROM user_subscriptions 
-         WHERE user_id = $1 AND status IN ('active', 'expired')
-         ORDER BY created_at DESC
+         WHERE user_id = $1 
+         AND (status IN ('active', 'expired', 'trial', 'grace_period') OR end_date > NOW())
+         ORDER BY end_date DESC
          LIMIT 1`;
     
     const subscriptionResult = await pool.query(subscriptionQuery, [user.id]);
@@ -211,10 +213,31 @@ router.post('/login', async (req, res) => {
       const now = new Date();
       const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
       
+      // Correct subscription status based on dates
+      let actualStatus = sub.status;
+      if (endDate > now && sub.status === 'expired') {
+        // Subscription end date is in future but marked as expired - fix it
+        actualStatus = 'active';
+        await pool.query(
+          'UPDATE user_subscriptions SET status = $1, updated_at = NOW() WHERE id = $2',
+          ['active', sub.id]
+        );
+      } else if (endDate <= now && (sub.status === 'active' || sub.status === 'trial')) {
+        // Subscription has expired but still marked as active - fix it
+        actualStatus = 'expired';
+        await pool.query(
+          'UPDATE user_subscriptions SET status = $1, updated_at = NOW() WHERE id = $2',
+          ['expired', sub.id]
+        );
+      }
+      
+      // Normalize plan name (remove _monthly, _quarterly, _yearly suffixes)
+      const planType = sub.plan.replace(/_monthly|_quarterly|_yearly/g, '');
+      
       subscription = {
         id: sub.id,
-        plan: sub.plan,
-        status: sub.status,
+        plan: planType,
+        status: actualStatus,
         startDate: sub.start_date,
         endDate: sub.end_date,
         gracePeriodEnd: sub.grace_period_end,
@@ -223,6 +246,46 @@ router.post('/login', async (req, res) => {
         isTrial: sub.is_trial || false,
         trialDaysRemaining: sub.is_trial ? Math.max(0, daysRemaining) : 0
       };
+    } else {
+      // First-time login - create 7-day trial
+      const trialStart = new Date();
+      const trialEnd = new Date();
+      trialEnd.setDate(trialEnd.getDate() + 7);
+      
+      // Check if user has ever had a trial
+      const trialCheckQuery = hasIsTrialColumn
+        ? `SELECT COUNT(*) as trial_count FROM user_subscriptions WHERE user_id = $1 AND is_trial = true`
+        : `SELECT COUNT(*) as trial_count FROM user_subscriptions WHERE user_id = $1 AND plan = 'platinum' AND status = 'trial'`;
+      
+      const trialCheck = await pool.query(trialCheckQuery, [user.id]);
+      const hadTrial = trialCheck.rows[0].trial_count > 0;
+      
+      if (!hadTrial) {
+        // Create trial subscription
+        const createTrialQuery = hasIsTrialColumn
+          ? `INSERT INTO user_subscriptions (user_id, plan, status, start_date, end_date, is_trial, created_at, updated_at)
+             VALUES ($1, 'platinum', 'active', $2, $3, true, NOW(), NOW())
+             RETURNING id, plan, status, start_date, end_date, is_trial`
+          : `INSERT INTO user_subscriptions (user_id, plan, status, start_date, end_date, created_at, updated_at)
+             VALUES ($1, 'platinum', 'trial', $2, $3, NOW(), NOW())
+             RETURNING id, plan, status, start_date, end_date, 'true' as is_trial`;
+        
+        const trialResult = await pool.query(createTrialQuery, [user.id, trialStart, trialEnd]);
+        const trial = trialResult.rows[0];
+        
+        subscription = {
+          id: trial.id,
+          plan: trial.plan,
+          status: trial.status,
+          startDate: trial.start_date,
+          endDate: trial.end_date,
+          gracePeriodEnd: null,
+          isInGracePeriod: false,
+          daysRemaining: 7,
+          isTrial: true,
+          trialDaysRemaining: 7
+        };
+      }
     }
 
     // Generate tokens

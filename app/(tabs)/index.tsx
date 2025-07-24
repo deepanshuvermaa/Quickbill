@@ -13,6 +13,7 @@ import { Card } from '@/components/Card';
 import { Button } from '@/components/Button';
 import { TrialBanner } from '@/components/TrialBanner';
 import { GuestBanner } from '@/components/GuestBanner';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner-v2';
 import { useBillsStore } from '@/store/billsStore';
 import { useItemsStore } from '@/store/itemsStore';
 import { useCustomerStore, initializeCustomerStore } from '@/store/customerStore';
@@ -102,6 +103,7 @@ export default function DashboardScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <GuestBanner />
         <TrialBanner />
+        <SubscriptionBanner />
         
         <View style={styles.statsContainer}>
           <StatCard

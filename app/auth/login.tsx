@@ -61,7 +61,8 @@ export default function LoginScreen() {
   
   const handleGuestLogin = () => {
     continueAsGuest();
-    // Navigation will be handled by auth state change
+    // Navigate to home immediately
+    router.replace('/(tabs)');
   };
   
   return (

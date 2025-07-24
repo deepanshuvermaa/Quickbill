@@ -101,7 +101,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 check "Entry file exists" "[ -f node_modules/expo-router/entry.js ]"
 check "App layout exists" "[ -f app/_layout.tsx ]"
-check "Subscription screen exists" "[ -f app/auth/subscription.tsx ]"
+check "Subscription screen exists" "[ -f app/subscription.tsx ]"
 check "Guest banner exists" "[ -f components/GuestBanner.tsx ]"
 check "Auth store exists" "[ -f store/authStore.ts ]"
 
@@ -111,7 +111,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 check_file_contains "Guest bill limit in authStore" "store/authStore.ts" "guestBillCount"
 check_file_contains "canCreateBillAsGuest function" "store/authStore.ts" "canCreateBillAsGuest"
 check_file_contains "Guest limit check in billing" "app/(tabs)/billing/index.tsx" "canCreateBillAsGuest"
-check_file_contains "Subscription routes" "app/auth/subscription.tsx" "PaymentModal"
+check_file_contains "Subscription routes" "app/subscription.tsx" "PaymentModal"
 check_file_contains "API endpoints configured" "utils/api.ts" "API_ENDPOINTS"
 
 echo -e "\n${BLUE}6. Android Configuration${NC}"

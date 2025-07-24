@@ -4,6 +4,7 @@ import { colors } from '@/constants/colors';
 import { useSubscriptionManager } from '@/utils/subscription-manager';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from '@/utils/navigation';
+import { navigateToSubscription } from '@/utils/subscription-navigation';
 import { AlertTriangle, Crown, Clock, X, AlertCircle } from 'lucide-react-native';
 import { authenticatedApiCall, API_ENDPOINTS } from '@/utils/api';
 
@@ -102,7 +103,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
     if (isGuestMode) {
       router.push('/auth/register');
     } else {
-      router.push('/auth/subscription');
+      navigateToSubscription();
     }
   };
 
@@ -179,7 +180,7 @@ export const SubscriptionStatusCard: React.FC = () => {
         </Text>
         <TouchableOpacity
           style={styles.statusButton}
-          onPress={() => router.push('/auth/subscription')}
+          onPress={() => navigateToSubscription()}
         >
           <Text style={styles.statusButtonText}>View Plans</Text>
         </TouchableOpacity>
@@ -248,7 +249,7 @@ export const SubscriptionStatusCard: React.FC = () => {
       {(subscription.status === 'expired' || subscription.isTrial || isInGracePeriod) && (
         <TouchableOpacity
           style={styles.statusButton}
-          onPress={() => router.push('/auth/subscription')}
+          onPress={() => navigateToSubscription()}
         >
           <Text style={styles.statusButtonText}>
             {subscription.status === 'expired' ? 'Renew' : subscription.isTrial ? 'Choose Plan' : 'Renew Now'}
@@ -328,7 +329,7 @@ export const GracePeriodNotification: React.FC = () => {
       <View style={styles.notificationActions}>
         <TouchableOpacity
           style={[styles.notificationButton, styles.primaryButton]}
-          onPress={() => router.push('/auth/subscription')}
+          onPress={() => navigateToSubscription()}
         >
           <Text style={styles.primaryButtonText}>Renew Now</Text>
         </TouchableOpacity>

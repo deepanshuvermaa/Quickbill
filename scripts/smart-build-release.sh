@@ -129,7 +129,7 @@ print_section "Step 5: Feature Verification"
 
 # Define features to check with correct paths
 declare -A FEATURES=(
-    ["Subscription Module"]="app/auth/subscription.tsx"
+    ["Subscription Module"]="app/subscription.tsx"
     ["Guest Mode"]="components/GuestBanner.tsx"
     ["Guest Bill Limit"]="store/authStore.ts:guestBillCount"
     ["API Configuration"]="utils/api.ts"

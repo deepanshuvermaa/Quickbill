@@ -4,6 +4,7 @@ import { colors } from '@/constants/colors';
 import { useSubscriptionManager } from '@/utils/subscription-manager';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from '@/utils/navigation';
+import { navigateToSubscription } from '@/utils/subscription-navigation';
 import { AlertTriangle, Crown, Clock, X } from 'lucide-react-native';
 
 interface SubscriptionBannerProps {
@@ -92,7 +93,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
     if (isGuestMode) {
       router.push('/auth/register');
     } else {
-      router.push('/subscription-plans');
+      navigateToSubscription();
     }
   };
 
@@ -167,7 +168,7 @@ export const SubscriptionStatusCard: React.FC = () => {
         </Text>
         <TouchableOpacity
           style={styles.statusButton}
-          onPress={() => router.push('/subscription-plans')}
+          onPress={() => navigateToSubscription()}
         >
           <Text style={styles.statusButtonText}>View Plans</Text>
         </TouchableOpacity>
@@ -222,7 +223,7 @@ export const SubscriptionStatusCard: React.FC = () => {
       {(subscription.status === 'expired' || subscription.plan === 'trial') && (
         <TouchableOpacity
           style={styles.statusButton}
-          onPress={() => router.push('/subscription-plans')}
+          onPress={() => navigateToSubscription()}
         >
           <Text style={styles.statusButtonText}>
             {subscription.status === 'expired' ? 'Renew' : 'Upgrade'}

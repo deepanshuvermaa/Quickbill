@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useItemsStore } from '@/store/itemsStore';
@@ -18,6 +19,7 @@ import { Button } from '@/components/Button';
 import { Plus, Search, Package, ArrowLeft, Lock } from 'lucide-react-native';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { useSubscriptionManager } from '@/utils/subscription-manager';
+import { navigateToSubscription } from '@/utils/subscription-navigation';
 
 export default function ItemsScreen() {
   const router = useRouter();
@@ -57,7 +59,7 @@ export default function ItemsScreen() {
   };
   
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <Stack.Screen 
         options={{
           title: 'Inventory',
@@ -163,7 +165,7 @@ export default function ItemsScreen() {
           </Text>
           <Button 
             title="View Plans"
-            onPress={() => router.push('/auth/subscription')}
+            onPress={() => navigateToSubscription()}
             style={styles.upgradeButton}
           />
         </View>
@@ -203,7 +205,7 @@ export default function ItemsScreen() {
           fullWidth
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -300,7 +302,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 120,
+    paddingBottom: 80,
   },
   addButtonContainer: {
     padding: 16,

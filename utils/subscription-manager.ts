@@ -152,7 +152,7 @@ export class SubscriptionManager {
     
     // Guest mode has very limited access
     if (isGuestMode) {
-      const guestFeatures = ['dashboard', 'billing', 'items_view'];
+      const guestFeatures = ['dashboard', 'billing', 'items_view', 'inventory', 'inventory_management'];
       return guestFeatures.includes(feature);
     }
     
@@ -168,7 +168,9 @@ export class SubscriptionManager {
     
     // Check if subscription is active or in grace period
     if (!this.isSubscriptionActive(subscription)) {
-      return false;
+      // Expired subscription gets guest-like access
+      const guestFeatures = ['dashboard', 'billing', 'items_view', 'inventory', 'inventory_management'];
+      return guestFeatures.includes(feature);
     }
     
     const limits = this.getCurrentLimits();
@@ -230,6 +232,9 @@ export class SubscriptionManager {
     }
     
     if (!this.isSubscriptionActive(subscription)) {
+      if (subscription.isTrial) {
+        return { allowed: false, reason: 'Your free trial has expired. Please choose a subscription plan to continue creating bills.' };
+      }
       return { allowed: false, reason: 'Your subscription has expired. Please renew to continue.' };
     }
     
@@ -283,6 +288,32 @@ export class SubscriptionManager {
     
     if (isGuestMode || !isAuthenticated || !subscription) {
       return PLAN_LIMITS.none;
+    }
+    
+    // If subscription is expired, give guest-like limited access
+    if (!this.isSubscriptionActive(subscription)) {
+      return {
+        ...PLAN_LIMITS.none,
+        maxBills: 50, // Same as guest mode
+        maxItems: 100, // Some limited access
+        maxCustomers: 50,
+        maxUsers: 1,
+        canPrint: false,
+        canExport: false,
+        canSync: false,
+        hasReports: false,
+        hasBillReports: false,
+        hasItemReports: false,
+        hasInventory: true, // Allow inventory access for guest/expired users
+        hasInventoryReports: false,
+        hasTaxReports: false,
+        hasCustomerDatabase: false,
+        hasCustomerReports: false,
+        hasUserReports: false,
+        hasKotBilling: false,
+        printerSupport: [],
+        hasPrioritySupport: false,
+      };
     }
     
     // Map old plan names to new ones if necessary

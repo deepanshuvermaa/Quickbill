@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { useAuthStore } from '@/store/authStore';
 import { Clock, AlertTriangle } from 'lucide-react-native';
+import { navigateToSubscription } from '@/utils/subscription-navigation';
 
 export const TrialBanner = () => {
   const router = useRouter();
@@ -101,7 +102,7 @@ export const TrialBanner = () => {
               borderColor: config.textColor,
             }
           ]}
-          onPress={() => router.push('/auth/subscription')}
+          onPress={() => navigateToSubscription()}
         >
           <Text style={[styles.buttonText, { color: colors.white }]}>
             {config.buttonText}

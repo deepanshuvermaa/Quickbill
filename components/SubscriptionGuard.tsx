@@ -4,6 +4,7 @@ import { colors } from '@/constants/colors';
 import { useSubscriptionManager } from '@/utils/subscription-manager';
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from '@/utils/navigation';
+import { navigateToSubscription } from '@/utils/subscription-navigation';
 import { AlertTriangle, CreditCard, Crown, Lock } from 'lucide-react-native';
 
 interface SubscriptionGuardProps {
@@ -71,7 +72,7 @@ export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({
           </Text>
           <TouchableOpacity
             style={styles.upgradeButton}
-            onPress={() => router.push('/subscription-plans')}
+            onPress={() => navigateToSubscription()}
           >
             <Text style={styles.upgradeButtonText}>View Plans</Text>
           </TouchableOpacity>
@@ -109,9 +110,9 @@ export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({
           style={styles.upgradeButton}
           onPress={() => {
             if (subscription.status === 'expired') {
-              router.push('/subscription-plans');
+              navigateToSubscription();
             } else {
-              router.push('/subscription-plans');
+              navigateToSubscription();
             }
           }}
         >
