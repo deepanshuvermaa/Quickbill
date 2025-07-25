@@ -58,12 +58,21 @@ app.use(express.urlencoded({ extended: true }));
 const path = require('path');
 app.use('/admin', express.static(path.join(__dirname, 'public')));
 
-// Health check endpoint
+// Health check endpoint - must be before other routes
 app.get('/health', (req, res) => {
-  res.json({ 
+  res.status(200).json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Also add a simple health check at root
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    message: 'QuickBill API Server',
+    status: 'running',
+    version: '1.0.0'
   });
 });
 
@@ -92,18 +101,36 @@ app.use('*', (req, res) => {
 // Start server with migration
 async function startServer() {
   try {
-    console.log('🔄 Running database migrations...');
-    await runMigrations();
-    console.log('✅ Database migrations completed!');
-    
-    app.listen(PORT, '0.0.0.0', () => {
+    // Start server first to handle health checks
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`🏥 Health check: http://localhost:${PORT}/health`);
     });
+
+    // Then run migrations in background
+    console.log('🔄 Running database migrations...');
+    runMigrations()
+      .then(() => {
+        console.log('✅ Database migrations completed!');
+      })
+      .catch((error) => {
+        console.error('⚠️  Migration error (non-fatal):', error);
+        // Don't exit - let the server continue running
+      });
+    
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 }
+
+// Handle uncaught errors
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled Rejection:', error);
+});
 
 startServer();
