@@ -29,6 +29,8 @@ import {
   Hash
 } from 'lucide-react-native';
 import { useHamburgerMenu } from '../../_layout';
+import { forceRefreshSubscription } from '@/utils/subscription-refresh';
+import { RefreshCw, CreditCard } from 'lucide-react-native';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -42,7 +44,7 @@ export default function SettingsScreen() {
     setPrimaryPrinter 
   } = useSettingsStore();
   
-  const { logout, isAuthenticated } = useAuthStore();
+  const { logout, isAuthenticated, subscription } = useAuthStore();
   
   const handleSaveBusinessInfo = () => {
     Alert.alert("Success", "Business information updated successfully");
@@ -264,6 +266,51 @@ export default function SettingsScreen() {
         </Card>
         
         <Card style={styles.section}>
+          <Text style={styles.sectionTitle}>Subscription</Text>
+          
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={() => router.push('/subscription')}
+          >
+            <View style={styles.settingItemLeft}>
+              <CreditCard size={20} color={colors.primary} style={styles.settingIcon} />
+              <View>
+                <Text style={styles.settingText}>Manage Subscription</Text>
+                {subscription && (
+                  <Text style={styles.subscriptionInfo}>
+                    {subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)} - {subscription.status}
+                  </Text>
+                )}
+              </View>
+            </View>
+            <ChevronRight size={20} color={colors.gray} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.settingItem}
+            onPress={async () => {
+              Alert.alert(
+                'Refresh Subscription',
+                'This will refresh your subscription data. You may need to log in again.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { 
+                    text: 'Refresh', 
+                    onPress: () => forceRefreshSubscription()
+                  }
+                ]
+              );
+            }}
+          >
+            <View style={styles.settingItemLeft}>
+              <RefreshCw size={20} color={colors.primary} style={styles.settingIcon} />
+              <Text style={styles.settingText}>Refresh Subscription Data</Text>
+            </View>
+            <ChevronRight size={20} color={colors.gray} />
+          </TouchableOpacity>
+        </Card>
+        
+        <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
           
           <TouchableOpacity 
@@ -401,6 +448,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.danger,
     fontWeight: '500',
+  },
+  subscriptionInfo: {
+    fontSize: 12,
+    color: colors.textLight,
+    marginTop: 2,
   },
   divider: {
     height: 1,

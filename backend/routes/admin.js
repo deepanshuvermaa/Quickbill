@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
 
 // Database connection
 const pool = new Pool({
@@ -9,20 +10,38 @@ const pool = new Pool({
 });
 
 // Admin authentication middleware
-const authenticateAdmin = (req, res, next) => {
-  const adminToken = req.headers['x-admin-token'];
-  
-  if (!adminToken || adminToken !== process.env.ADMIN_SECRET_TOKEN) {
-    return res.status(403).json({
+const authenticateAdmin = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    console.log('Admin check - userId:', userId);
+    
+    // Get user email
+    const userResult = await pool.query(
+      'SELECT id, email FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    console.log('Admin check - user:', userResult.rows[0]);
+    
+    if (!userResult.rows[0] || userResult.rows[0].email.toLowerCase() !== 'deepanshuverma966@gmail.com') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Admin check error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Admin access required'
+      message: 'Internal server error'
     });
   }
-  
-  next();
 };
 
-// Apply admin auth to all routes
+// Apply JWT auth first, then admin check
+router.use(authenticateToken);
 router.use(authenticateAdmin);
 
 // Get all users with subscription details

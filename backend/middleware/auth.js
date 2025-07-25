@@ -12,16 +12,23 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
+      console.error('JWT verification error:', err.message);
       return res.status(403).json({
         success: false,
         message: 'Invalid or expired token'
       });
     }
 
-    req.userId = user.userId;
-    req.user = user;
+    // Debug logging
+    console.log('JWT decoded:', decoded);
+    
+    // Handle both userId and id in token
+    req.userId = decoded.userId || decoded.id || decoded.sub;
+    req.user = decoded;
+    
+    console.log('Set req.userId to:', req.userId);
     next();
   });
 };

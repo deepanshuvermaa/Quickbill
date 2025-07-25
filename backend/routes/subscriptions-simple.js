@@ -66,7 +66,7 @@ router.get('/pending-payments', authenticateToken, async (req, res) => {
       [req.userId]
     );
     
-    if (userResult.rows[0]?.email !== 'deepanshuverma966@gmail.com') {
+    if (!userResult.rows[0] || userResult.rows[0].email.toLowerCase() !== 'deepanshuverma966@gmail.com') {
       return res.status(403).json({
         success: false,
         message: 'Admin access required'
@@ -115,7 +115,7 @@ router.get('/subscriptions-detailed', authenticateToken, async (req, res) => {
       [req.userId]
     );
     
-    if (userResult.rows[0]?.email !== 'deepanshuverma966@gmail.com') {
+    if (!userResult.rows[0] || userResult.rows[0].email.toLowerCase() !== 'deepanshuverma966@gmail.com') {
       return res.status(403).json({
         success: false,
         message: 'Admin access required'
@@ -150,7 +150,7 @@ router.get('/active-subscriptions', authenticateToken, async (req, res) => {
       [req.userId]
     );
     
-    if (userResult.rows[0]?.email !== 'deepanshuverma966@gmail.com') {
+    if (!userResult.rows[0] || userResult.rows[0].email.toLowerCase() !== 'deepanshuverma966@gmail.com') {
       return res.status(403).json({
         success: false,
         message: 'Admin access required'
@@ -184,7 +184,7 @@ router.post('/verify-payment/:paymentId', authenticateToken, async (req, res) =>
       [req.userId]
     );
     
-    if (userResult.rows[0]?.email !== 'deepanshuverma966@gmail.com') {
+    if (!userResult.rows[0] || userResult.rows[0].email.toLowerCase() !== 'deepanshuverma966@gmail.com') {
       return res.status(403).json({
         success: false,
         message: 'Admin access required'
