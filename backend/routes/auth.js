@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const Joi = require('joi');
+const { authenticateToken } = require('../middleware/auth');
 const router = express.Router();
 
 // Database connection
