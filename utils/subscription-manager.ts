@@ -286,12 +286,21 @@ export class SubscriptionManager {
   getCurrentLimits(): SubscriptionLimits {
     const { isAuthenticated, isGuestMode, subscription } = useAuthStore.getState();
     
+    console.log('getCurrentLimits called:', {
+      isAuthenticated,
+      isGuestMode,
+      hasSubscription: !!subscription,
+      plan: subscription?.plan
+    });
+    
     if (isGuestMode || !isAuthenticated || !subscription) {
+      console.log('Returning NONE limits - not authenticated or no subscription');
       return PLAN_LIMITS.none;
     }
     
     // If subscription is expired, give guest-like limited access
     if (!this.isSubscriptionActive(subscription)) {
+      console.log('Subscription not active, returning limited access');
       return {
         ...PLAN_LIMITS.none,
         maxBills: 50, // Same as guest mode
@@ -322,7 +331,11 @@ export class SubscriptionManager {
       plan = 'silver'; // Default old plans to silver
     }
     
-    return PLAN_LIMITS[plan as SubscriptionPlan] || PLAN_LIMITS.none;
+    console.log(`Returning limits for plan: ${plan}`);
+    const limits = PLAN_LIMITS[plan as SubscriptionPlan] || PLAN_LIMITS.none;
+    console.log('Plan limits:', limits);
+    
+    return limits;
   }
 
   /**
@@ -331,9 +344,23 @@ export class SubscriptionManager {
   isSubscriptionActive(subscription: any): boolean {
     if (!subscription) return false;
     
+    // Log for debugging
+    console.log('Checking subscription active status:', {
+      status: subscription.status,
+      endDate: subscription.endDate,
+      plan: subscription.plan
+    });
+    
     const now = new Date().getTime();
     const endDate = new Date(subscription.endDate).getTime();
     const gracePeriodEnd = subscription.gracePeriodEnd ? new Date(subscription.gracePeriodEnd).getTime() : null;
+    
+    // Check if dates are valid
+    if (isNaN(endDate)) {
+      console.error('Invalid endDate:', subscription.endDate);
+      // If status is active, trust it
+      return subscription.status === 'active' || subscription.status === 'trial';
+    }
     
     // Active subscription
     if ((subscription.status === 'active' || subscription.status === 'trial') && now <= endDate) {
