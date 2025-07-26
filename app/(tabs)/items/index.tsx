@@ -20,6 +20,7 @@ import { Plus, Search, Package, ArrowLeft, Lock } from 'lucide-react-native';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 import { useSubscriptionManager } from '@/utils/subscription-manager';
 import { navigateToSubscription } from '@/utils/subscription-navigation';
+import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 
 export default function ItemsScreen() {
   const router = useRouter();
@@ -27,6 +28,10 @@ export default function ItemsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const subscriptionManager = useSubscriptionManager();
+  
+  // Force refresh subscription data when entering this screen
+  useSubscriptionCheck('inventory');
+  
   const hasInventoryAccess = subscriptionManager.hasFeatureAccess('inventory');
   
   // Get unique categories

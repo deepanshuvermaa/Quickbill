@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
     REGISTER: `${API_BASE_URL}/auth/register`,
     REFRESH: `${API_BASE_URL}/auth/refresh`,
     LOGOUT: `${API_BASE_URL}/auth/logout`,
+    SUBSCRIPTION_REFRESH: `${API_BASE_URL}/auth/subscription-refresh`,
   },
   
   // Subscription endpoints

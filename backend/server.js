@@ -75,6 +75,7 @@ app.use('/api/subscriptions-simple', subscriptionSimpleRoutes);
 app.use('/api/usage', usageRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/subscriptions', require('./routes/admin-subscription-management'));
+app.use('/api/subscription-verify', require('./routes/subscription-verify'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

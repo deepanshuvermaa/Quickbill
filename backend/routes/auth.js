@@ -356,4 +356,96 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
+// Refresh subscription status (lightweight endpoint)
+router.get('/subscription-refresh', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    
+    // Get active subscription with auto-correction
+    const subscriptionResult = await pool.query(
+      `SELECT id, plan, status, start_date, end_date, grace_period_end, is_trial
+       FROM user_subscriptions 
+       WHERE user_id = $1 
+       AND (status IN ('active', 'expired', 'trial', 'grace_period') OR end_date > NOW())
+       ORDER BY end_date DESC
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (subscriptionResult.rows.length > 0) {
+      const sub = subscriptionResult.rows[0];
+      
+      // Auto-correct subscription status based on dates
+      if (sub.end_date && new Date(sub.end_date) > new Date()) {
+        // If end_date is in future but status is not active, fix it
+        if (sub.status !== 'active' && sub.status !== 'trial') {
+          await pool.query(
+            'UPDATE user_subscriptions SET status = $1 WHERE id = $2',
+            ['active', sub.id]
+          );
+          sub.status = 'active';
+        }
+      } else if (sub.end_date && new Date(sub.end_date) <= new Date()) {
+        // If end_date is past but status is still active, fix it
+        if (sub.status === 'active' || sub.status === 'trial') {
+          await pool.query(
+            'UPDATE user_subscriptions SET status = $1 WHERE id = $2',
+            ['expired', sub.id]
+          );
+          sub.status = 'expired';
+        }
+      }
+      
+      // Normalize plan name
+      const planType = sub.plan.replace(/_monthly|_quarterly|_yearly/g, '');
+      
+      // Calculate days remaining
+      const now = new Date();
+      const endDate = new Date(sub.end_date);
+      const daysRemaining = Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));
+      
+      const subscription = {
+        id: sub.id,
+        plan: planType,
+        planDisplayName: planType.charAt(0).toUpperCase() + planType.slice(1),
+        tierLevel: planType === 'trial' ? 'platinum' : planType,
+        status: sub.status,
+        isTrial: sub.is_trial || sub.plan === 'trial',
+        startDate: new Date(sub.start_date).getTime(),
+        endDate: new Date(sub.end_date).getTime(),
+        gracePeriodEnd: sub.grace_period_end ? new Date(sub.grace_period_end).getTime() : null,
+        isInGracePeriod: sub.status === 'grace_period',
+        daysRemaining: daysRemaining,
+        graceDaysRemaining: 0,
+        features: {
+          hasInventory: ['gold', 'platinum', 'trial'].includes(planType),
+          hasTaxReports: ['gold', 'platinum', 'trial'].includes(planType),
+          hasCustomerReports: ['gold', 'platinum', 'trial'].includes(planType),
+          hasUserReports: ['platinum', 'trial'].includes(planType),
+          hasKotBilling: ['platinum', 'trial'].includes(planType),
+          maxUsers: planType === 'platinum' ? 5 : planType === 'gold' ? 3 : 1
+        },
+        autoRenew: false
+      };
+      
+      res.json({
+        success: true,
+        subscription
+      });
+    } else {
+      // No subscription
+      res.json({
+        success: true,
+        subscription: null
+      });
+    }
+  } catch (error) {
+    console.error('Subscription refresh error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error refreshing subscription'
+    });
+  }
+});
+
 module.exports = router;

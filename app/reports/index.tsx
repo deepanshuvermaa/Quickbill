@@ -22,11 +22,15 @@ import {
 } from 'lucide-react-native';
 import { useSubscriptionManager } from '@/utils/subscription-manager';
 import { useAuthStore } from '@/store/authStore';
+import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
 
 export default function ReportsScreen() {
   const router = useRouter();
   const subscriptionManager = useSubscriptionManager();
   const { subscription } = useAuthStore();
+  
+  // Force refresh subscription data when entering this screen
+  useSubscriptionCheck('reports');
   
   const renderReportCard = (
     title: string, 

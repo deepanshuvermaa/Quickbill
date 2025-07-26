@@ -195,18 +195,41 @@ export const useAuthStore = create<AuthState>()(
         if (!token) return;
         
         try {
-          // Real API call to check subscription status
+          // Use the lightweight subscription refresh endpoint
           const response = await authenticatedApiCall(
-            API_ENDPOINTS.SUBSCRIPTIONS.STATUS,
+            API_ENDPOINTS.AUTH.SUBSCRIPTION_REFRESH,
             token
           );
           
-          set({
-            subscription: response.data || response.subscription,
-            lastSyncTime: Date.now(),
-          });
+          if (response.subscription) {
+            set({
+              subscription: response.subscription,
+              lastSyncTime: Date.now(),
+            });
+          }
+          
+          // Return true to indicate success
+          return true;
         } catch (error) {
           console.error('Failed to check subscription status:', error);
+          
+          // Fallback to subscription status endpoint
+          try {
+            const response = await authenticatedApiCall(
+              API_ENDPOINTS.SUBSCRIPTIONS.STATUS,
+              token
+            );
+            
+            set({
+              subscription: response.data || response.subscription,
+              lastSyncTime: Date.now(),
+            });
+            
+            return true;
+          } catch (fallbackError) {
+            console.error('Fallback subscription check failed:', fallbackError);
+            return false;
+          }
         }
       },
       
