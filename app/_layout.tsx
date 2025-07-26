@@ -1,13 +1,14 @@
-import React, { useState, useCallback, createContext, useContext } from 'react';
+import React, { useState, useCallback, createContext, useContext, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { View, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, AppState } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Menu } from 'lucide-react-native';
 import { colors } from '@/constants/colors';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
 import { AuthGuard } from '@/components/AuthGuard';
+import { useAuthStore } from '@/store/authStore';
 
 // Create a context for the hamburger menu
 interface HamburgerMenuContextType {
@@ -27,6 +28,7 @@ export const useHamburgerMenu = () => useContext(HamburgerMenuContext);
 
 export default function RootLayout() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, checkSubscriptionStatus } = useAuthStore();
 
   const toggleMenu = useCallback(() => {
     setIsMenuOpen((prev) => !prev);
@@ -35,6 +37,22 @@ export default function RootLayout() {
   const closeMenu = useCallback(() => {
     setIsMenuOpen(false);
   }, []);
+
+  // Refresh subscription when app becomes active
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active' && isAuthenticated) {
+        console.log('App became active, refreshing subscription...');
+        checkSubscriptionStatus().then(() => {
+          console.log('Subscription refreshed successfully');
+        }).catch((error) => {
+          console.error('Failed to refresh subscription:', error);
+        });
+      }
+    });
+
+    return () => subscription.remove();
+  }, [isAuthenticated, checkSubscriptionStatus]);
 
   const [loaded] = useFonts({
     // Add any custom fonts here if needed

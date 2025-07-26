@@ -286,21 +286,12 @@ export class SubscriptionManager {
   getCurrentLimits(): SubscriptionLimits {
     const { isAuthenticated, isGuestMode, subscription } = useAuthStore.getState();
     
-    console.log('getCurrentLimits called:', {
-      isAuthenticated,
-      isGuestMode,
-      hasSubscription: !!subscription,
-      plan: subscription?.plan
-    });
-    
     if (isGuestMode || !isAuthenticated || !subscription) {
-      console.log('Returning NONE limits - not authenticated or no subscription');
       return PLAN_LIMITS.none;
     }
     
     // If subscription is expired, give guest-like limited access
     if (!this.isSubscriptionActive(subscription)) {
-      console.log('Subscription not active, returning limited access');
       return {
         ...PLAN_LIMITS.none,
         maxBills: 50, // Same as guest mode
@@ -331,11 +322,7 @@ export class SubscriptionManager {
       plan = 'silver'; // Default old plans to silver
     }
     
-    console.log(`Returning limits for plan: ${plan}`);
-    const limits = PLAN_LIMITS[plan as SubscriptionPlan] || PLAN_LIMITS.none;
-    console.log('Plan limits:', limits);
-    
-    return limits;
+    return PLAN_LIMITS[plan as SubscriptionPlan] || PLAN_LIMITS.none;
   }
 
   /**
@@ -344,38 +331,9 @@ export class SubscriptionManager {
   isSubscriptionActive(subscription: any): boolean {
     if (!subscription) return false;
     
-    // Log for debugging
-    console.log('Checking subscription active status:', {
-      status: subscription.status,
-      endDate: subscription.endDate,
-      plan: subscription.plan
-    });
-    
     const now = new Date().getTime();
-    
-    // Handle both timestamp and string dates
-    let endDate: number;
-    if (typeof subscription.endDate === 'number') {
-      endDate = subscription.endDate;
-    } else {
-      endDate = new Date(subscription.endDate).getTime();
-    }
-    
-    let gracePeriodEnd: number | null = null;
-    if (subscription.gracePeriodEnd) {
-      if (typeof subscription.gracePeriodEnd === 'number') {
-        gracePeriodEnd = subscription.gracePeriodEnd;
-      } else {
-        gracePeriodEnd = new Date(subscription.gracePeriodEnd).getTime();
-      }
-    }
-    
-    // Check if dates are valid
-    if (isNaN(endDate)) {
-      console.error('Invalid endDate:', subscription.endDate);
-      // If status is active, trust it
-      return subscription.status === 'active' || subscription.status === 'trial';
-    }
+    const endDate = subscription.endDate; // Backend now always sends timestamps
+    const gracePeriodEnd = subscription.gracePeriodEnd;
     
     // Active subscription
     if ((subscription.status === 'active' || subscription.status === 'trial') && now <= endDate) {
@@ -410,23 +368,8 @@ export class SubscriptionManager {
     if (!subscription) return 0;
     
     const now = new Date().getTime();
-    
-    // Handle both timestamp and string dates
-    let endDate: number;
-    if (typeof subscription.endDate === 'number') {
-      endDate = subscription.endDate;
-    } else {
-      endDate = new Date(subscription.endDate).getTime();
-    }
-    
-    let gracePeriodEnd: number | null = null;
-    if (subscription.gracePeriodEnd) {
-      if (typeof subscription.gracePeriodEnd === 'number') {
-        gracePeriodEnd = subscription.gracePeriodEnd;
-      } else {
-        gracePeriodEnd = new Date(subscription.gracePeriodEnd).getTime();
-      }
-    }
+    const endDate = subscription.endDate; // Backend now always sends timestamps
+    const gracePeriodEnd = subscription.gracePeriodEnd;
     
     if (subscription.status === 'active' || subscription.status === 'trial') {
       return Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));

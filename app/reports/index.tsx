@@ -23,8 +23,6 @@ import {
 import { useSubscriptionManager } from '@/utils/subscription-manager';
 import { useAuthStore } from '@/store/authStore';
 import { useSubscriptionCheck } from '@/hooks/useSubscriptionCheck';
-import { debugSubscription, debugFeatureAccess } from '@/utils/subscription-debug';
-import { useEffect } from 'react';
 
 export default function ReportsScreen() {
   const router = useRouter();
@@ -33,13 +31,6 @@ export default function ReportsScreen() {
   
   // Force refresh subscription data when entering this screen
   useSubscriptionCheck('reports');
-  
-  // Debug subscription on mount
-  useEffect(() => {
-    console.log('Reports Screen - Debugging subscription...');
-    debugSubscription();
-    debugFeatureAccess('reports');
-  }, [subscription]);
   
   const renderReportCard = (
     title: string, 

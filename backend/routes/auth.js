@@ -239,13 +239,14 @@ router.post('/login', async (req, res) => {
         id: sub.id,
         plan: planType,
         status: actualStatus,
-        startDate: sub.start_date,
-        endDate: sub.end_date,
-        gracePeriodEnd: sub.grace_period_end,
+        startDate: new Date(sub.start_date).getTime(),
+        endDate: new Date(sub.end_date).getTime(),
+        gracePeriodEnd: sub.grace_period_end ? new Date(sub.grace_period_end).getTime() : null,
         isInGracePeriod: sub.grace_period_end && new Date() <= new Date(sub.grace_period_end),
         daysRemaining: Math.max(0, daysRemaining),
         isTrial: sub.is_trial || false,
-        trialDaysRemaining: sub.is_trial ? Math.max(0, daysRemaining) : 0
+        trialDaysRemaining: sub.is_trial ? Math.max(0, daysRemaining) : 0,
+        version: Date.now() // Add version for change detection
       };
     } else {
       // First-time login - create 7-day trial
@@ -278,13 +279,14 @@ router.post('/login', async (req, res) => {
           id: trial.id,
           plan: trial.plan,
           status: trial.status,
-          startDate: trial.start_date,
-          endDate: trial.end_date,
+          startDate: new Date(trial.start_date).getTime(),
+          endDate: new Date(trial.end_date).getTime(),
           gracePeriodEnd: null,
           isInGracePeriod: false,
           daysRemaining: 7,
           isTrial: true,
-          trialDaysRemaining: 7
+          trialDaysRemaining: 7,
+          version: Date.now()
         };
       }
     }
@@ -426,7 +428,8 @@ router.get('/subscription-refresh', authenticateToken, async (req, res) => {
           hasKotBilling: ['platinum', 'trial'].includes(planType),
           maxUsers: planType === 'platinum' ? 5 : planType === 'gold' ? 3 : 1
         },
-        autoRenew: false
+        autoRenew: false,
+        version: Date.now() // Add version for change detection
       };
       
       res.json({
