@@ -352,8 +352,23 @@ export class SubscriptionManager {
     });
     
     const now = new Date().getTime();
-    const endDate = new Date(subscription.endDate).getTime();
-    const gracePeriodEnd = subscription.gracePeriodEnd ? new Date(subscription.gracePeriodEnd).getTime() : null;
+    
+    // Handle both timestamp and string dates
+    let endDate: number;
+    if (typeof subscription.endDate === 'number') {
+      endDate = subscription.endDate;
+    } else {
+      endDate = new Date(subscription.endDate).getTime();
+    }
+    
+    let gracePeriodEnd: number | null = null;
+    if (subscription.gracePeriodEnd) {
+      if (typeof subscription.gracePeriodEnd === 'number') {
+        gracePeriodEnd = subscription.gracePeriodEnd;
+      } else {
+        gracePeriodEnd = new Date(subscription.gracePeriodEnd).getTime();
+      }
+    }
     
     // Check if dates are valid
     if (isNaN(endDate)) {
@@ -395,8 +410,23 @@ export class SubscriptionManager {
     if (!subscription) return 0;
     
     const now = new Date().getTime();
-    const endDate = new Date(subscription.endDate).getTime();
-    const gracePeriodEnd = subscription.gracePeriodEnd ? new Date(subscription.gracePeriodEnd).getTime() : null;
+    
+    // Handle both timestamp and string dates
+    let endDate: number;
+    if (typeof subscription.endDate === 'number') {
+      endDate = subscription.endDate;
+    } else {
+      endDate = new Date(subscription.endDate).getTime();
+    }
+    
+    let gracePeriodEnd: number | null = null;
+    if (subscription.gracePeriodEnd) {
+      if (typeof subscription.gracePeriodEnd === 'number') {
+        gracePeriodEnd = subscription.gracePeriodEnd;
+      } else {
+        gracePeriodEnd = new Date(subscription.gracePeriodEnd).getTime();
+      }
+    }
     
     if (subscription.status === 'active' || subscription.status === 'trial') {
       return Math.max(0, Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)));

@@ -90,9 +90,24 @@ export const useAuthStore = create<AuthState>()(
             body: JSON.stringify({ email, password }),
           });
           
+          // Normalize subscription data
+          let normalizedSubscription = response.subscription;
+          if (normalizedSubscription) {
+            // Ensure dates are timestamps
+            if (normalizedSubscription.startDate && typeof normalizedSubscription.startDate === 'string') {
+              normalizedSubscription.startDate = new Date(normalizedSubscription.startDate).getTime();
+            }
+            if (normalizedSubscription.endDate && typeof normalizedSubscription.endDate === 'string') {
+              normalizedSubscription.endDate = new Date(normalizedSubscription.endDate).getTime();
+            }
+            if (normalizedSubscription.gracePeriodEnd && typeof normalizedSubscription.gracePeriodEnd === 'string') {
+              normalizedSubscription.gracePeriodEnd = new Date(normalizedSubscription.gracePeriodEnd).getTime();
+            }
+          }
+          
           set({
             user: response.user,
-            subscription: response.subscription,
+            subscription: normalizedSubscription,
             token: response.token,
             refreshToken: response.refreshToken,
             isAuthenticated: true,
@@ -202,8 +217,21 @@ export const useAuthStore = create<AuthState>()(
           );
           
           if (response.subscription) {
+            // Normalize subscription data
+            let normalizedSubscription = response.subscription;
+            // Ensure dates are timestamps
+            if (normalizedSubscription.startDate && typeof normalizedSubscription.startDate === 'string') {
+              normalizedSubscription.startDate = new Date(normalizedSubscription.startDate).getTime();
+            }
+            if (normalizedSubscription.endDate && typeof normalizedSubscription.endDate === 'string') {
+              normalizedSubscription.endDate = new Date(normalizedSubscription.endDate).getTime();
+            }
+            if (normalizedSubscription.gracePeriodEnd && typeof normalizedSubscription.gracePeriodEnd === 'string') {
+              normalizedSubscription.gracePeriodEnd = new Date(normalizedSubscription.gracePeriodEnd).getTime();
+            }
+            
             set({
-              subscription: response.subscription,
+              subscription: normalizedSubscription,
               lastSyncTime: Date.now(),
             });
           }
